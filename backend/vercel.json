@@ -27,5 +27,6 @@
     "pages/api/**/*.ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "buildCommand": "npm run vercel-build"
 }
