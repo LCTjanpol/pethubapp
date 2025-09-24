@@ -6,7 +6,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "src/app/**/*.tsx",
+      "src": "pages/**/*.tsx",
       "use": "@vercel/next"
     }
   ],
@@ -17,7 +17,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/src/app/$1"
+      "dest": "/pages/$1"
     }
   ],
   "env": {
@@ -28,5 +28,6 @@
       "maxDuration": 30
     }
   },
-  "buildCommand": "npm run vercel-build"
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm install && npx prisma generate"
 }
