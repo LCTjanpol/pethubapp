@@ -38,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Check content type to determine if it's multipart form data
     const contentType = req.headers['content-type'] || '';
     let fullName: string, gender: string, birthdate: string, email: string, password: string;
-    let profileImage: any = null;
+    let profileImage: formidable.File | null = null;
 
     if (contentType.includes('multipart/form-data')) {
       // Handle form data with potential file upload

@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
 import { authMiddleware } from '../../../lib/middleware';
 import type { AuthenticatedRequest } from '../../../types/next';
