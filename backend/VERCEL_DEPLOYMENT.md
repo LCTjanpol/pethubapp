@@ -158,3 +158,6 @@ For issues with Vercel deployment:
 - [Vercel Documentation](https://vercel.com/docs)
 - [Vercel Community](https://github.com/vercel/vercel/discussions)
 - [Supabase Documentation](https://supabase.com/docs)
+
+---
+*Last updated: January 2025*
