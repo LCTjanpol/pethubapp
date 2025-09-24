@@ -12,7 +12,7 @@ PetHub is a comprehensive pet care management application built with React Nativ
 - **Task Management**: Create custom daily tasks with scheduling and reminders
 - **Medical Records**: Track vaccinations, vet visits, medications, and health concerns
 - **Smart Notifications**: Get reminders for tasks, scheduled activities, and social interactions
-- **Pet Shop Locator**: Find nearby veterinary clinics, grooming services, and pet supply stores
+- **Pet Shop Locator**: Find nearby veterinary clinics, grooming services, and pet supply stores with address display
 - **User Profile**: Modern profile management with statistics and account settings
 
 ### For Administrators
@@ -35,7 +35,7 @@ PetHub is a comprehensive pet care management application built with React Nativ
 - **Navigation**: React Navigation with bottom tabs
 - **State Management**: React Hooks (useState, useEffect, useContext)
 - **UI Components**: Custom components with consistent styling
-- **Maps**: React Native Maps for shop locations
+- **Maps**: React Native Maps for shop locations with reverse geocoding
 - **Charts**: React Native Chart Kit for analytics
 - **Image Handling**: Expo Image Picker for photos
 - **Storage**: AsyncStorage for local data persistence
@@ -124,17 +124,6 @@ Login → Admin Dashboard → Shop Management → User Management → Analytics
    - Press `a` for Android emulator
    - Scan QR code with Expo Go app on physical device
 
-## 📊 Database Schema
-
-### Core Models
-- **User**: Profile information, authentication, admin status
-- **Pet**: Pet details, owner relationship
-- **Post**: Social media posts with images and captions
-- **Comment**: Comments on posts with nested replies
-- **Task**: Pet care tasks with scheduling
-- **VaccinationRecord**: Medical records and vaccination tracking
-- **Shop**: Pet service businesses with location and details
-
 ## 🔧 API Endpoints
 
 ### Authentication
@@ -167,60 +156,6 @@ Login → Admin Dashboard → Shop Management → User Management → Analytics
 - `GET /api/admin/users` - Fetch all users
 - `GET /api/admin/pets` - Fetch all pets
 - `GET /api/admin/stats` - Get analytics data
-
-## 🎯 Key Features Implemented
-
-### Phase 1: UI/UX Enhancement ✅
-- Applied PetHub color scheme across all screens
-- Fixed keyboard overlay issues in login/signup
-- Consistent typography and button styling
-
-### Phase 2: Home Screen Social Features ✅
-- Caption-based posts with image sharing
-- Like/unlike functionality with visual feedback
-- Comments and replies system
-- Modern social media interface
-
-### Phase 3: Enhanced Pet Management ✅
-- Custom task creation with name, description, time, frequency
-- Comprehensive medical records with vet info and medications
-- Modern card-based pet profiles
-
-### Phase 4: Smart Notifications ✅
-- Task reminders with countdown timers
-- Social notifications for likes and comments
-- Scheduled task alerts
-- Auto-refresh every minute
-
-### Phase 5: Modern Profile Screen ✅
-- User statistics (pets, posts, likes)
-- Recent posts grid display
-- Clean account information layout
-- Logout confirmation modal
-
-### Phase 6: Admin Shop Management ✅
-- Map picker for precise location selection
-- Working hours and days configuration
-- Shop image upload functionality
-- Enhanced shop input forms
-
-### Phase 7: Enhanced Maps ✅
-- Detailed shop information modals
-- Shop type icons and color coding
-- Working hours and days display
-- Interactive map with custom markers
-
-### Phase 8: Admin Dashboards ✅
-- Visual analytics with pie charts
-- User, pet, shop, and post management
-- Delete functionality for all entities
-- Real-time data visualization
-
-### Phase 9: Final Polish ✅
-- Removed test files and cleanup scripts
-- Updated app icons and splash screen to use logo.png
-- Consistent branding throughout
-- Production-ready configuration
 
 ## 🔒 Security Features
 
@@ -268,4 +203,4 @@ This project is developed as a capstone project for educational purposes.
 
 ---
 
-**PetHub** - Making pet care simple, social, and smart! 🐕🐱 
+**PetHub** - Making pet care simple, social, and smart! 🐕🐱
