@@ -23,11 +23,6 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "functions": {
-    "pages/api/**/*.ts": {
-      "maxDuration": 30
-    }
-  },
   "buildCommand": "npm run vercel-build",
   "installCommand": "npm install && npx prisma generate"
 }
