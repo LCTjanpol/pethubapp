@@ -1,9 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable experimental features for better performance
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client', 'bcrypt'],
+  },
+  
+  // Configure headers for CORS and API routes
   async headers() {
     return [
       {
-        // Apply these headers to all routes
+        // Apply these headers to all API routes
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
@@ -23,13 +29,26 @@ const nextConfig = {
       },
     ];
   },
+  
   // Add server external packages for better API handling
-  serverExternalPackages: ['bcrypt'],
+  serverExternalPackages: ['bcrypt', '@prisma/client'],
+  
   // Configure images for Next.js Image component
   images: {
-    domains: ['localhost', '10.40.0.230'],
+    domains: ['localhost', '10.40.0.230', 'your-render-app.onrender.com'],
     unoptimized: true,
+  },
+  
+  // Optimize for production
+  swcMinify: true,
+  
+  // Configure output for static export if needed
+  output: 'standalone',
+  
+  // Environment variables that should be available on the client
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

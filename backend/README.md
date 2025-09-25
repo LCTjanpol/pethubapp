@@ -34,4 +34,4 @@ This is the backend API for the PetHub mobile application.
 
 This backend is deployed on Vercel and connected to Supabase database.
 
-Last updated: $(date)
+Last updated: September 25, 2025 - Deployment test

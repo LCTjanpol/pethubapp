@@ -5,11 +5,14 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && next build",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "render-build": "prisma generate && next build",
+    "render-start": "next start -p ${PORT:-3000}",
+    "render-deploy": "npm run render-build && npm run render-start"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: pethub-backend
+    env: node
+    plan: starter
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pethub-db
+          property: connectionString
