@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import { authMiddleware, adminMiddleware } from '../../../lib/middleware';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
 import path from 'path';
