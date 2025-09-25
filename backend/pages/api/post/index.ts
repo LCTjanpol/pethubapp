@@ -150,8 +150,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         return res.status(401).json({ message: 'No token provided' });
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
-      // const userId = decoded.userId; // Not used in GET method
+      // Verify token but don't need to use the decoded data for GET method
+      jwt.verify(token, process.env.JWT_SECRET as string);
 
       // Fetch posts with comments and replies included
       const posts = await prisma.post.findMany({
