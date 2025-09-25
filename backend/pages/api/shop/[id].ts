@@ -6,6 +6,18 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
 
+// Debug: Check if Supabase Storage is available
+console.log('🔧 Supabase Storage import check:', {
+  uploadToSupabaseStorage: typeof uploadToSupabaseStorage,
+  STORAGE_BUCKETS: STORAGE_BUCKETS
+});
+
+// Debug: Check environment variables
+console.log('🔧 Environment variables check:', {
+  SUPABASE_URL: process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing',
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Set' : '❌ Missing'
+});
+
 export const config = {
   api: {
     bodyParser: false, // Disable default body parser for file uploads
@@ -60,6 +72,8 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
 
       console.log('📋 Form fields received:', Object.keys(fields));
       console.log('📁 Form files received:', Object.keys(files));
+      console.log('📋 Form fields values:', fields);
+      console.log('📁 Form files values:', files);
 
       // Extract form data
       const name = Array.isArray(fields.name) ? fields.name[0] : fields.name;
