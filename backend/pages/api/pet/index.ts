@@ -71,10 +71,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'GET') {
     // If admin, return all pets; if user, return only their pets
     let pets;
-    if (req.user && req.user.isAdmin) {
-      pets = await prisma.pet.findMany();
-    } else if (userId) {
-      pets = await prisma.pet.findMany({ where: { userId } });
+    if (userId) {
+      // Check if user is admin
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.isAdmin) {
+        pets = await prisma.pet.findMany();
+      } else {
+        pets = await prisma.pet.findMany({ where: { userId } });
+      }
     } else {
       return res.status(401).json({ message: 'Unauthorized' });
     }
