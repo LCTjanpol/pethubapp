@@ -39,13 +39,16 @@ const AdminDashboard = () => {
   // Fetch dashboard statistics
   const fetchDashboardStats = useCallback(async () => {
     try {
+      console.log('🔄 Fetching dashboard stats...');
       const token = await AsyncStorage.getItem('token');
       if (!token) {
+        console.log('❌ No token found, redirecting to login');
         router.replace('/auth/login');
         return;
       }
 
-      const [usersRes, petsRes, postsRes, shopsRes] = await Promise.all([
+      console.log('📡 Making API calls...');
+      const [usersRes, petsRes, postsRes, shopsRes] = await Promise.allSettled([
         apiClient.get(ENDPOINTS.ADMIN.USERS, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -60,28 +63,47 @@ const AdminDashboard = () => {
         }),
       ]);
 
-      const totalUsers = usersRes.data?.length || 0;
-      const totalPets = petsRes.data?.length || 0;
-      const totalPosts = postsRes.data?.length || 0;
-      const totalShops = shopsRes.data?.length || 0;
+      // Handle individual API call results
+      const usersData = usersRes.status === 'fulfilled' ? usersRes.value.data : [];
+      const petsData = petsRes.status === 'fulfilled' ? petsRes.value.data : [];
+      const postsData = postsRes.status === 'fulfilled' ? postsRes.value.data : [];
+      const shopsData = shopsRes.status === 'fulfilled' ? shopsRes.value.data : [];
+
+      // Log any failed API calls
+      if (usersRes.status === 'rejected') console.error('❌ Users API failed:', usersRes.reason);
+      if (petsRes.status === 'rejected') console.error('❌ Pets API failed:', petsRes.reason);
+      if (postsRes.status === 'rejected') console.error('❌ Posts API failed:', postsRes.reason);
+      if (shopsRes.status === 'rejected') console.error('❌ Shops API failed:', shopsRes.reason);
+
+      console.log('✅ API calls completed:', {
+        users: usersData?.length || 0,
+        pets: petsData?.length || 0,
+        posts: postsData?.length || 0,
+        shops: shopsData?.length || 0,
+      });
+
+      const totalUsers = usersData?.length || 0;
+      const totalPets = petsData?.length || 0;
+      const totalPosts = postsData?.length || 0;
+      const totalShops = shopsData?.length || 0;
 
       // Calculate recent items (last 7 days)
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-      const recentUsers = usersRes.data?.filter((user: any) => 
+      const recentUsers = usersData?.filter((user: any) => 
         user.createdAt && new Date(user.createdAt) > oneWeekAgo
       ).length || 0;
 
-      const recentPets = petsRes.data?.filter((pet: any) => 
+      const recentPets = petsData?.filter((pet: any) => 
         pet.createdAt && new Date(pet.createdAt) > oneWeekAgo
       ).length || 0;
 
-      const recentPosts = postsRes.data?.filter((post: any) => 
+      const recentPosts = postsData?.filter((post: any) => 
         post.createdAt && new Date(post.createdAt) > oneWeekAgo
       ).length || 0;
 
-      const recentShops = shopsRes.data?.filter((shop: any) => 
+      const recentShops = shopsData?.filter((shop: any) => 
         shop.createdAt && new Date(shop.createdAt) > oneWeekAgo
       ).length || 0;
 
@@ -95,23 +117,35 @@ const AdminDashboard = () => {
         recentPosts,
         recentShops,
       });
+      
+      console.log('📊 Dashboard stats updated:', {
+        totalUsers,
+        totalPets,
+        totalPosts,
+        totalShops,
+        recentUsers,
+        recentPets,
+        recentPosts,
+        recentShops,
+      });
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      console.error('❌ Error fetching dashboard stats:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      console.log('🏁 Dashboard loading completed');
     }
-  }, []);
+  }, []); // Empty dependency array to prevent infinite loops
 
   // Pull to refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchDashboardStats();
-  }, [fetchDashboardStats]);
+  }, []); // Empty dependency array to prevent infinite loops
 
   useEffect(() => {
     fetchDashboardStats();
-  }, [fetchDashboardStats]);
+  }, []); // Empty dependency array to prevent infinite loops
 
   const handleLogout = async () => {
     try {
