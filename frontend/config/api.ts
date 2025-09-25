@@ -4,6 +4,12 @@ import axios from 'axios';
 // Update this URL to match your backend server address
 export const API_URL = "https://pethub-backend-8dfs.onrender.com/api"; // <-- Updated for Render deployment
 
+// Debug logging
+console.log('🔧 API Configuration loaded:', {
+  API_URL,
+  timestamp: new Date().toISOString()
+});
+
 // Create axios instance with timeout and retry logic
 const apiClient = axios.create({
   baseURL: API_URL, // Use API_URL as base
@@ -47,6 +53,19 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     console.error('API Response Error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        baseURL: error.config?.baseURL,
+        timeout: error.config?.timeout
+      }
+    });
     
     // Handle specific error types
     if (error.code === 'ECONNABORTED') {
