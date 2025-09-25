@@ -56,6 +56,7 @@ const AdminShopsScreen = () => {
   // Edit states
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [hasNewImage, setHasNewImage] = useState(false);
   
   // Custom working hours and days states
   const [showCustomHours, setShowCustomHours] = useState(false);
@@ -211,6 +212,7 @@ const AdminShopsScreen = () => {
   const handleEditShop = (shop: Shop) => {
     setEditingShop(shop);
     setIsEditing(true);
+    setHasNewImage(false); // Reset the new image flag when editing
     
     // Populate form with existing shop data
     setShopFormData({
@@ -232,7 +234,13 @@ const AdminShopsScreen = () => {
     
     // Set image if exists
     if (shop.image) {
-      setSelectedImage(`${API_URL.replace('/api', '')}${shop.image}`);
+      // If it's already a full URL (Supabase Storage URL), use as is
+      if (shop.image.startsWith('http')) {
+        setSelectedImage(shop.image);
+      } else {
+        // If it's a local path, construct the full URL
+        setSelectedImage(`${API_URL.replace('/api', '')}${shop.image}`);
+      }
     } else {
       setSelectedImage(null);
     }
@@ -316,6 +324,7 @@ const AdminShopsScreen = () => {
         const imageUri = result.assets[0].uri;
         setSelectedImage(imageUri);
         setShopFormData(prev => ({ ...prev, image: imageUri }));
+        setHasNewImage(true); // Mark that a new image was selected
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -338,6 +347,7 @@ const AdminShopsScreen = () => {
     });
     setSelectedLocation(null);
     setSelectedImage(null);
+    setHasNewImage(false); // Reset the new image flag
     setShowCustomHours(false);
     setShowCustomDays(false);
     setShowStartTimePicker(false);
@@ -392,7 +402,8 @@ const AdminShopsScreen = () => {
       }
       formData.append('workingDays', finalWorkingDays);
 
-      if (selectedImage) {
+      // Only append image if it's a new image (not editing existing image URL)
+      if (selectedImage && (!isEditing || hasNewImage)) {
         formData.append('image', {
           uri: selectedImage,
           type: 'image/jpeg',

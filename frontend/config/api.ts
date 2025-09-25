@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Update this URL to match your backend server address
-export const API_URL = "https://pethub-backend-8dfs.onrender.com/api"; // <-- Updated to Render deployment
+export const API_URL = "http://localhost:3000/api"; // <-- Updated for local development
 
 // Create axios instance with timeout and retry logic
 const apiClient = axios.create({
