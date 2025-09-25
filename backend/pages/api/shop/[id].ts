@@ -125,4 +125,4 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
   return res.status(405).json({ message: 'Method not allowed' });
 };
 
-export default authMiddleware(adminMiddleware(handler));
+export default adminMiddleware(handler);
