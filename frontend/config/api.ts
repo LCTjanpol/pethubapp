@@ -18,10 +18,17 @@ const apiClient = axios.create({
   },
 });
 
-// Add request interceptor for logging
+// Add request interceptor for logging and FormData handling
 apiClient.interceptors.request.use(
   (config) => {
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    
+    // Handle FormData requests - remove Content-Type header to let axios set it automatically
+    if (config.data instanceof FormData) {
+      console.log('📤 FormData request detected, removing Content-Type header');
+      delete config.headers['Content-Type'];
+    }
+    
     return config;
   },
   (error) => {
