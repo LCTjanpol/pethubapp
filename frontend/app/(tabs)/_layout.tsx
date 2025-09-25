@@ -1,8 +1,11 @@
 import { Tabs } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { PetHubColors } from '../../constants/Colors';
+import { useRouter } from 'expo-router';
 
 export default function TabLayout() {
+  const router = useRouter();
+  
   return (
     <Tabs
       initialRouteName="home"
@@ -18,6 +21,15 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
+        },
+        // Add lazy loading to prevent navigation issues
+        lazy: true,
+        // Ensure tabs maintain their state
+        unmountOnBlur: false,
+      }}
+      screenListeners={{
+        tabPress: (e) => {
+          console.log('Tab pressed:', e.target);
         },
       }}
     >

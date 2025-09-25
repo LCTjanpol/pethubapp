@@ -29,7 +29,8 @@ const IndexScreen = () => {
             router.replace('/admin/dashboard');
           } else {
             console.log('✅ REGULAR USER - Navigating to user tabs');
-            router.replace('/(tabs)/home');
+            // Navigate to tabs layout without forcing home tab
+            router.replace('/(tabs)');
           }
         } catch (error) {
           console.error('❌ Navigation error:', error);
