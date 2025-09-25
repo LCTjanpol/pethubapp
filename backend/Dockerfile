@@ -11,7 +11,10 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install dependencies (including dev dependencies for build)
-RUN npm ci
+RUN npm ci --no-cache
+
+# Ensure Supabase package is available
+RUN npm list @supabase/supabase-js || npm install @supabase/supabase-js
 
 # Generate Prisma client
 RUN npx prisma generate

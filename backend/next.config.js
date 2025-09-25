@@ -31,7 +31,7 @@ const nextConfig = {
   },
   
   // Add server external packages for better API handling
-  serverExternalPackages: ['bcrypt', '@prisma/client'],
+  serverExternalPackages: ['bcrypt', '@prisma/client', '@supabase/supabase-js'],
   
   // Configure images for Next.js Image component
   images: {
