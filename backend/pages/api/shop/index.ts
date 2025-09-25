@@ -231,7 +231,7 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
       }
 
       // Verify token and get user info
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
       req.user = { userId: decoded.userId };
 
       // Check if user is admin
