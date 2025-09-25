@@ -4,6 +4,7 @@ import { authMiddleware, adminMiddleware } from '../../../lib/middleware';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
 import path from 'path';
+import jwt from 'jsonwebtoken';
 import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
 
 export const config = {
@@ -213,14 +214,44 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
   return res.status(405).json({ message: 'Method not allowed' });
 };
 
-// Combine handlers based on request method
+// Main handler with proper middleware application
 const handler = async (req: AuthedRequest, res: NextApiResponse) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method === 'GET') {
     return userHandler(req, res);
   } else if (req.method === 'POST' || req.method === 'DELETE') {
-    return adminMiddleware(adminHandler)(req, res);
+    // Apply authentication middleware inline to avoid body consumption issues
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token) {
+        return res.status(401).json({ message: 'No token provided' });
+      }
+
+      // Verify token and get user info
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+      req.user = { userId: decoded.userId };
+
+      // Check if user is admin
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { isAdmin: true }
+      });
+
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      return adminHandler(req, res);
+    } catch (error) {
+      console.error('Authentication error:', error);
+      return res.status(401).json({ message: 'Invalid token' });
+    }
   }
   return res.status(405).json({ message: 'Method not allowed' });
 };
 
-export default authMiddleware(handler);
+export default handler;
