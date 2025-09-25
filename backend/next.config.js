@@ -42,7 +42,7 @@ const nextConfig = {
   // Optimize for production (swcMinify is now default in Next.js 15)
   
   // Configure output for static export if needed
-  output: 'standalone',
+  // output: 'standalone', // Commented out for Render compatibility
   
   // Environment variables that should be available on the client
   env: {
