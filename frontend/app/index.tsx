@@ -29,11 +29,17 @@ const IndexScreen = () => {
             router.replace('/admin/dashboard');
           } else {
             console.log('✅ REGULAR USER - Navigating to user tabs');
-            // Navigate to tabs layout without forcing home tab
-            router.replace('/(tabs)');
+            // Navigate to tabs layout - default to home tab
+            router.replace('/(tabs)/home');
           }
         } catch (error) {
           console.error('❌ Navigation error:', error);
+          // Fallback navigation if there's an error
+          try {
+            router.replace('/auth/login');
+          } catch (fallbackError) {
+            console.error('❌ Fallback navigation failed:', fallbackError);
+          }
         }
       }, 100);
     }
