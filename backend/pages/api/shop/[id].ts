@@ -180,7 +180,15 @@ const mainHandler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'PUT') {
     try {
       console.log('🔐 Starting authentication for shop update...');
-      const token = req.headers.authorization?.replace('Bearer ', '');
+      const authHeader = req.headers.authorization;
+      console.log('🔐 Auth header:', authHeader ? 'Present' : 'Missing');
+      
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.log('❌ No valid authorization header');
+        return res.status(401).json({ message: 'No valid authorization header' });
+      }
+
+      const token = authHeader.replace('Bearer ', '');
       console.log('🔐 Token received:', token ? 'Yes' : 'No');
       
       if (!token) {
@@ -188,9 +196,15 @@ const mainHandler = async (req: NextApiRequest, res: NextApiResponse) => {
         return res.status(401).json({ message: 'No token provided' });
       }
 
+      // Check if JWT_SECRET is available
+      if (!process.env.JWT_SECRET) {
+        console.error('❌ JWT_SECRET not found in environment variables');
+        return res.status(500).json({ message: 'Server configuration error' });
+      }
+
       // Verify token and get user info
       console.log('🔐 Verifying JWT token...');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId: number };
       console.log('✅ Token verified, userId:', decoded.userId);
       (req as AuthedRequest).user = { userId: decoded.userId };
 
@@ -210,7 +224,13 @@ const mainHandler = async (req: NextApiRequest, res: NextApiResponse) => {
       return handler(req as AuthedRequest, res);
     } catch (error) {
       console.error('❌ Authentication error:', error);
-      return res.status(401).json({ message: 'Invalid token' });
+      if (error instanceof jwt.JsonWebTokenError) {
+        return res.status(401).json({ message: 'Invalid token' });
+      } else if (error instanceof jwt.TokenExpiredError) {
+        return res.status(401).json({ message: 'Token expired' });
+      } else {
+        return res.status(500).json({ message: 'Authentication error' });
+      }
     }
   }
 
