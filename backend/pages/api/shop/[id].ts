@@ -4,6 +4,7 @@ import { authMiddleware, adminMiddleware } from '../../../lib/middleware';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
 
 export const config = {
   api: {
@@ -69,28 +70,33 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
       if (imageFile) {
         const fileObj = Array.isArray(imageFile) ? imageFile[0] : imageFile;
         if (fileObj && fileObj.originalFilename) {
-          // Delete old image if it exists
-          if (existingShop.image) {
-            try {
-              const oldImagePath = path.join(process.cwd(), 'public', existingShop.image);
-              await fs.unlink(oldImagePath);
-            } catch (error) {
-              console.error('Error deleting old shop image:', error);
-              // Continue with update even if old image deletion fails
-            }
+          try {
+            const fileExtension = path.extname(fileObj.originalFilename);
+            const fileName = `shop_${shopId}_${Date.now()}${fileExtension}`;
+            
+            // Read file buffer for Supabase upload
+            const fileBuffer = await fs.readFile(fileObj.filepath);
+            
+            // Determine content type based on file extension
+            let contentType = 'image/jpeg';
+            if (fileExtension === '.png') contentType = 'image/png';
+            else if (fileExtension === '.gif') contentType = 'image/gif';
+            else if (fileExtension === '.webp') contentType = 'image/webp';
+            
+            // Upload to Supabase Storage
+            const uploadResult = await uploadToSupabaseStorage(
+              fileBuffer,
+              STORAGE_BUCKETS.SHOP_IMAGES,
+              fileName,
+              contentType
+            );
+            
+            imagePath = uploadResult.publicUrl;
+            console.log('Shop image updated in Supabase:', imagePath);
+          } catch (imgErr) {
+            console.error('Error uploading shop image:', imgErr);
+            // Continue with update even if image upload fails
           }
-
-          // Upload new image
-          const fileExtension = path.extname(fileObj.originalFilename);
-          const fileName = `shop_${Date.now()}${fileExtension}`;
-          const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'shops');
-          
-          // Ensure upload directory exists
-          await fs.mkdir(uploadDir, { recursive: true });
-          
-          const targetPath = path.join(uploadDir, fileName);
-          await fs.copyFile(fileObj.filepath, targetPath);
-          imagePath = `/uploads/shops/${fileName}`;
         }
       }
 

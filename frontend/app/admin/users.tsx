@@ -114,11 +114,13 @@ const AdminUsersScreen = () => {
     
     // Handle different image path formats
     if (imagePath.startsWith('http')) {
-      return imagePath; // Full URL
+      return imagePath; // Full URL (Supabase Storage)
     } else if (imagePath.startsWith('/uploads/')) {
-      return `http://10.40.0.230:3000${imagePath}`;
+      const baseUrl = API_URL.replace('/api', ''); // Remove /api suffix to get base URL
+      return `${baseUrl}${imagePath}`;
     } else {
-      return `http://10.40.0.230:3000/uploads/${imagePath}`;
+      const baseUrl = API_URL.replace('/api', ''); // Remove /api suffix to get base URL
+      return `${baseUrl}/uploads/${imagePath}`;
     }
   };
 

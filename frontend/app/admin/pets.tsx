@@ -118,11 +118,13 @@ const AdminPetsScreen = () => {
     
     // Handle different image path formats
     if (imagePath.startsWith('http')) {
-      return imagePath; // Full URL
+      return imagePath; // Full URL (Supabase Storage)
     } else if (imagePath.startsWith('/uploads/')) {
-      return `${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'}${imagePath}`;
+      const baseUrl = API_URL.replace('/api', ''); // Remove /api suffix to get base URL
+      return `${baseUrl}${imagePath}`;
     } else {
-      return `${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'}/uploads/${imagePath}`;
+      const baseUrl = API_URL.replace('/api', ''); // Remove /api suffix to get base URL
+      return `${baseUrl}/uploads/${imagePath}`;
     }
   };
 
