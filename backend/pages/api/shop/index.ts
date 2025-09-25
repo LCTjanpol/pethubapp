@@ -53,6 +53,10 @@ const userHandler = async (req: AuthedRequest, res: NextApiResponse) => {
 const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
   if (req.method === 'POST') {
     try {
+      console.log('🔄 Shop creation request received');
+      console.log('📋 Request headers:', req.headers);
+      console.log('📋 Content-Type:', req.headers['content-type']);
+      
       // Parse multipart/form-data for file uploads
       const form = formidable({
         multiples: false,
@@ -60,10 +64,16 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
         maxFileSize: 10 * 1024 * 1024 // 10MB limit
       });
 
+      console.log('📤 Starting form parsing...');
       const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
         form.parse(req, (err: Error | null, fields: formidable.Fields, files: formidable.Files) => {
-          if (err) reject(err);
-          else resolve([fields, files]);
+          if (err) {
+            console.error('❌ Form parsing error:', err);
+            reject(err);
+          } else {
+            console.log('✅ Form parsing successful');
+            resolve([fields, files]);
+          }
         });
       });
 
@@ -152,12 +162,20 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
         },
       });
 
-      return res.status(201).json(shop);
-    } catch (error) {
-      console.error('Error creating shop:', error);
-      return res.status(500).json({ message: 'Failed to create shop' });
-    }
-  }
+          console.log('✅ Shop created successfully:', shop.id);
+          return res.status(201).json(shop);
+        } catch (error) {
+          console.error('❌ Error creating shop:', error);
+          console.error('❌ Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+          });
+          return res.status(500).json({ 
+            message: 'Failed to create shop',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
 
   if (req.method === 'DELETE') {
     try {
