@@ -225,28 +225,37 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
   } else if (req.method === 'POST' || req.method === 'DELETE') {
     // Apply authentication middleware inline to avoid body consumption issues
     try {
+      console.log('🔐 Starting authentication for shop creation...');
       const token = req.headers.authorization?.replace('Bearer ', '');
+      console.log('🔐 Token received:', token ? 'Yes' : 'No');
+      
       if (!token) {
+        console.log('❌ No token provided');
         return res.status(401).json({ message: 'No token provided' });
       }
 
       // Verify token and get user info
+      console.log('🔐 Verifying JWT token...');
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
+      console.log('✅ Token verified, userId:', decoded.userId);
       req.user = { userId: decoded.userId };
 
       // Check if user is admin
+      console.log('🔐 Checking admin status...');
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
         select: { isAdmin: true }
       });
 
       if (!user || !user.isAdmin) {
+        console.log('❌ User is not admin');
         return res.status(403).json({ message: 'Admin access required' });
       }
 
+      console.log('✅ Admin authentication successful, proceeding to shop creation...');
       return adminHandler(req, res);
     } catch (error) {
-      console.error('Authentication error:', error);
+      console.error('❌ Authentication error:', error);
       return res.status(401).json({ message: 'Invalid token' });
     }
   }
