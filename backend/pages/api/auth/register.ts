@@ -66,7 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       birthdate = fields.birthdate?.[0]?.trim() || '';
       email = fields.email?.[0]?.trim().toLowerCase() || '';
       password = fields.password?.[0] || '';
-      profileImage = files.profileImage;
+      profileImage = files.profileImage?.[0] || null;
     } else {
       // Handle JSON data (no file upload)
       const body = await new Promise<string>((resolve, reject) => {
