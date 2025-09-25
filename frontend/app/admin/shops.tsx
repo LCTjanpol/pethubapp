@@ -393,20 +393,32 @@ const AdminShopsScreen = () => {
       let response;
       if (isEditing && editingShop) {
         // Update existing shop
+        console.log('🔄 Updating shop:', editingShop.id, 'with data:', {
+          name: shopFormData.name,
+          type: shopFormData.type,
+          hasImage: !!selectedImage
+        });
         response = await apiClient.put(ENDPOINTS.SHOP.UPDATE(editingShop.id.toString()), formData, {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
+            // Don't set Content-Type for multipart/form-data - let axios handle it
           },
         });
+        console.log('✅ Shop update successful:', response.status);
       } else {
         // Create new shop
+        console.log('🔄 Creating new shop with data:', {
+          name: shopFormData.name,
+          type: shopFormData.type,
+          hasImage: !!selectedImage
+        });
         response = await apiClient.post(ENDPOINTS.SHOP.LIST, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
+            // Don't set Content-Type for multipart/form-data - let axios handle it
           },
         });
+        console.log('✅ Shop creation successful:', response.status);
       }
 
       if (response.data) {

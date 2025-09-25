@@ -20,11 +20,15 @@ interface AuthedRequest extends NextApiRequest {
 const handler = async (req: AuthedRequest, res: NextApiResponse) => {
   if (req.method === 'PUT') {
     try {
+      console.log('🔄 Shop update request received');
       const shopId = parseInt(req.query.id as string);
       
       if (!shopId) {
+        console.log('❌ Shop ID is missing');
         return res.status(400).json({ message: 'Shop ID is required' });
       }
+      
+      console.log('📝 Updating shop ID:', shopId);
 
       // Check if shop exists
       const existingShop = await prisma.shop.findUnique({
@@ -44,10 +48,18 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
 
       const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
         form.parse(req, (err: Error | null, fields: formidable.Fields, files: formidable.Files) => {
-          if (err) reject(err);
-          else resolve([fields, files]);
+          if (err) {
+            console.error('❌ Form parsing error:', err);
+            reject(err);
+          } else {
+            console.log('✅ Form parsed successfully');
+            resolve([fields, files]);
+          }
         });
       });
+
+      console.log('📋 Form fields received:', Object.keys(fields));
+      console.log('📁 Form files received:', Object.keys(files));
 
       // Extract form data
       const name = Array.isArray(fields.name) ? fields.name[0] : fields.name;
