@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
-import path from 'path';
 import jwt from 'jsonwebtoken';
 import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
 

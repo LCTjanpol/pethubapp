@@ -12,9 +12,7 @@ export const config = {
   },
 };
 
-interface AuthedRequest extends NextApiRequest {
-  user?: { userId: number };
-}
+// Removed unused interface
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // Handle CORS preflight requests
@@ -153,7 +151,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
-      const userId = decoded.userId;
+      // const userId = decoded.userId; // Not used in GET method
 
       // Fetch posts with comments and replies included
       const posts = await prisma.post.findMany({
