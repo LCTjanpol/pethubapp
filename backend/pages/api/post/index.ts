@@ -1,9 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import { authMiddleware } from '../../../lib/middleware';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
 import path from 'path';
+import jwt from 'jsonwebtoken';
 import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
 
 export const config = {
@@ -16,11 +16,25 @@ interface AuthedRequest extends NextApiRequest {
   user?: { userId: number };
 }
 
-const handler = async (req: AuthedRequest, res: NextApiResponse) => {
-  const userId = req.user?.userId;
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   if (req.method === 'POST') {
     try {
+      console.log('📝 Post creation request received');
+      
+      // Authenticate user inline to avoid middleware interference
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token) {
+        return res.status(401).json({ message: 'No token provided' });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
+      const userId = decoded.userId;
+
       // Parse multipart/form-data
       const form = formidable({
         multiples: false,
@@ -132,6 +146,15 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
 
   if (req.method === 'GET') {
     try {
+      // Authenticate user inline
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token) {
+        return res.status(401).json({ message: 'No token provided' });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
+      const userId = decoded.userId;
+
       // Fetch posts with comments and replies included
       const posts = await prisma.post.findMany({
         include: { 
@@ -161,4 +184,4 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
   return res.status(405).json({ message: 'Method not allowed' });
 };
 
-export default authMiddleware(handler);
+export default handler;
