@@ -25,8 +25,10 @@ apiClient.interceptors.request.use(
     
     // Handle FormData requests - remove Content-Type header to let axios set it automatically
     if (config.data instanceof FormData) {
-      console.log('📤 FormData request detected, removing Content-Type header');
+      console.log('📤 FormData request detected, removing Content-Type header and increasing timeout');
       delete config.headers['Content-Type'];
+      // Increase timeout for file uploads
+      config.timeout = 60000; // 60 seconds for file uploads
     }
     
     return config;
