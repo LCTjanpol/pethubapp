@@ -85,12 +85,24 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
       let imagePath = null;
       const imageFile = files.image?.[0] || null;
       
+      console.log('🖼️ Shop creation - Image file received:', !!imageFile);
+      console.log('📁 Shop creation - Form files received:', Object.keys(files));
+      console.log('📁 Shop creation - Form files values:', files);
+      
       if (imageFile) {
         const fileObj = Array.isArray(imageFile) ? imageFile[0] : imageFile;
+        console.log('📁 Shop creation - File object:', { 
+          hasFile: !!fileObj, 
+          hasFilename: !!fileObj?.originalFilename,
+          filename: fileObj?.originalFilename 
+        });
+        
         if (fileObj && fileObj.originalFilename) {
           try {
             const fileExtension = path.extname(fileObj.originalFilename);
             const fileName = `shop_${Date.now()}${fileExtension}`;
+            
+            console.log('📤 Shop creation - Uploading image to Supabase:', fileName);
             
             // Read file buffer for Supabase upload
             const fileBuffer = await fs.readFile(fileObj.filepath);
@@ -101,6 +113,8 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
             else if (fileExtension === '.gif') contentType = 'image/gif';
             else if (fileExtension === '.webp') contentType = 'image/webp';
             
+            console.log('📤 Shop creation - Upload details:', { fileName, contentType, bufferSize: fileBuffer.length });
+            
             // Upload to Supabase Storage
             const uploadResult = await uploadToSupabaseStorage(
               fileBuffer,
@@ -110,13 +124,19 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
             );
             
             imagePath = uploadResult.publicUrl;
-            console.log('Shop image uploaded to Supabase:', imagePath);
+            console.log('✅ Shop creation - Image uploaded to Supabase:', imagePath);
           } catch (imgErr) {
-            console.error('Error uploading shop image:', imgErr);
+            console.error('❌ Shop creation - Error uploading shop image:', imgErr);
             // Continue without image if upload fails
           }
+        } else {
+          console.log('⚠️ Shop creation - Image file object or filename missing');
         }
+      } else {
+        console.log('ℹ️ Shop creation - No image file provided');
       }
+      
+      console.log('🖼️ Shop creation - Final image path to save:', imagePath);
 
       // Create shop in database
       const shop = await prisma.shop.create({
