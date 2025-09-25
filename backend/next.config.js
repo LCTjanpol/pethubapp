@@ -2,7 +2,7 @@
 const nextConfig = {
   // Enable experimental features for better performance
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'bcrypt'],
+    // serverComponentsExternalPackages moved to serverExternalPackages
   },
   
   // Configure headers for CORS and API routes
@@ -39,8 +39,7 @@ const nextConfig = {
     unoptimized: true,
   },
   
-  // Optimize for production
-  swcMinify: true,
+  // Optimize for production (swcMinify is now default in Next.js 15)
   
   // Configure output for static export if needed
   output: 'standalone',
