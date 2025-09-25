@@ -64,7 +64,7 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
 
       // Handle image upload if present
       let imagePath = existingShop.image; // Keep existing image by default
-      const imageFile = files.image;
+      const imageFile = files.image?.[0] || null;
       
       if (imageFile) {
         const fileObj = Array.isArray(imageFile) ? imageFile[0] : imageFile;

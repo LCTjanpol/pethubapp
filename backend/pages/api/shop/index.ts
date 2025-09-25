@@ -78,7 +78,7 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
 
       // Handle image upload if present
       let imagePath = null;
-      const imageFile = files.image;
+      const imageFile = files.image?.[0] || null;
       
       if (imageFile) {
         const fileObj = Array.isArray(imageFile) ? imageFile[0] : imageFile;

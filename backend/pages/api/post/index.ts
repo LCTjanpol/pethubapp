@@ -66,7 +66,7 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
 
       // Handle image upload if present
       let imagePath = '';
-      const file = files.image || files.file; // Accept both 'image' and 'file' keys
+      const file = files.image?.[0] || files.file?.[0] || null; // Accept both 'image' and 'file' keys
       
       if (file) {
         const fileObj = Array.isArray(file) ? file[0] : file;
