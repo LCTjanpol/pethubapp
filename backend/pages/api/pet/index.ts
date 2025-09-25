@@ -15,6 +15,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const userId = req.user?.userId;
 
   if (req.method === 'POST') {
+    // Check if user is authenticated
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
     // Parse multipart/form-data
     const form = formidable({
       multiples: false,
