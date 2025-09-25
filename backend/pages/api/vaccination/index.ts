@@ -7,6 +7,11 @@ const handler = async (req: AuthenticatedRequest, res: NextApiResponse) => {
   const userId = req.user?.userId;
 
   if (req.method === 'POST') {
+    // Check if user is authenticated
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    
     const { petId, diagnose, vetName, medication, description, date } = req.body;
     const record = await prisma.medicalRecord.create({
       data: {
@@ -23,6 +28,11 @@ const handler = async (req: AuthenticatedRequest, res: NextApiResponse) => {
   }
 
   if (req.method === 'GET') {
+    // Check if user is authenticated
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    
     const records = await prisma.medicalRecord.findMany({
       where: { userId },
     });
