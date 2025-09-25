@@ -35,6 +35,10 @@ const userHandler = async (req: AuthedRequest, res: NextApiResponse) => {
         },
         orderBy: { createdAt: 'desc' }
       });
+      
+      console.log('🏪 Shops fetched from database:', shops.length, 'shops');
+      console.log('🖼️ Shop images in database:', shops.map(shop => ({ id: shop.id, name: shop.name, image: shop.image })));
+      
       return res.status(200).json(shops);
     } catch (error) {
       console.error('Error fetching shops:', error);

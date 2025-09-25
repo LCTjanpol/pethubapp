@@ -155,22 +155,29 @@ const AdminShopsScreen = () => {
 
   // Helper function to generate proper image URLs
   const getImageUrl = (imagePath: string | undefined): { uri: string } | number => {
+    console.log('🖼️ getImageUrl called with:', imagePath);
+    
     if (!imagePath) {
+      console.log('❌ No image path provided, using default image');
       return require('../../assets/images/image.png');
     }
     
     // If it's already a full URL (Supabase Storage URL), return as is
     if (imagePath.startsWith('http')) {
+      console.log('✅ Full URL detected (Supabase Storage):', imagePath);
       return { uri: imagePath };
     }
     
     // If it starts with /uploads (legacy local paths), construct the full URL using API base URL
     if (imagePath.startsWith('/uploads')) {
       const baseUrl = API_URL.replace('/api', ''); // Remove /api suffix to get base URL
-      return { uri: `${baseUrl}${imagePath}` };
+      const fullUrl = `${baseUrl}${imagePath}`;
+      console.log('🔗 Constructed URL from local path:', fullUrl);
+      return { uri: fullUrl };
     }
     
     // Fallback to default image
+    console.log('⚠️ Unknown image path format, using default image:', imagePath);
     return require('../../assets/images/image.png');
   };
 
@@ -187,6 +194,9 @@ const AdminShopsScreen = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log('🏪 Shops fetched from API:', response.data);
+      console.log('🖼️ Shop images:', response.data.map((shop: Shop) => ({ id: shop.id, name: shop.name, image: shop.image })));
+      
       setShops(response.data);
     } catch (error) {
       console.error('Error fetching shops:', error);
