@@ -79,12 +79,23 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
       let imagePath = existingShop.image; // Keep existing image by default
       const imageFile = files.image?.[0] || null;
       
+      console.log('🖼️ Image file received:', !!imageFile);
+      console.log('🖼️ Current shop image:', existingShop.image);
+      
       if (imageFile) {
         const fileObj = Array.isArray(imageFile) ? imageFile[0] : imageFile;
+        console.log('📁 File object:', { 
+          hasFile: !!fileObj, 
+          hasFilename: !!fileObj?.originalFilename,
+          filename: fileObj?.originalFilename 
+        });
+        
         if (fileObj && fileObj.originalFilename) {
           try {
             const fileExtension = path.extname(fileObj.originalFilename);
             const fileName = `shop_${shopId}_${Date.now()}${fileExtension}`;
+            
+            console.log('📤 Uploading image to Supabase:', fileName);
             
             // Read file buffer for Supabase upload
             const fileBuffer = await fs.readFile(fileObj.filepath);
@@ -95,6 +106,8 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
             else if (fileExtension === '.gif') contentType = 'image/gif';
             else if (fileExtension === '.webp') contentType = 'image/webp';
             
+            console.log('📤 Upload details:', { fileName, contentType, bufferSize: fileBuffer.length });
+            
             // Upload to Supabase Storage
             const uploadResult = await uploadToSupabaseStorage(
               fileBuffer,
@@ -104,13 +117,19 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
             );
             
             imagePath = uploadResult.publicUrl;
-            console.log('Shop image updated in Supabase:', imagePath);
+            console.log('✅ Shop image updated in Supabase:', imagePath);
           } catch (imgErr) {
-            console.error('Error uploading shop image:', imgErr);
+            console.error('❌ Error uploading shop image:', imgErr);
             // Continue with update even if image upload fails
           }
+        } else {
+          console.log('⚠️ Image file object or filename missing');
         }
+      } else {
+        console.log('ℹ️ No image file provided, keeping existing image');
       }
+      
+      console.log('🖼️ Final image path to save:', imagePath);
 
       // Update shop in database
       const updatedShop = await prisma.shop.update({

@@ -1,0 +1,190 @@
+---
+alwaysApply: true
+---
+
+1. General Rules
+•	Code must be simple, readable, and maintainable.
+•	Do not overwrite working code when updating; only change the requested parts.
+•	Keep each file under 250 lines. Split into smaller components, utils, or hooks if needed.
+•	Always add comments for complex logic.
+•	Use camelCase for variables/functions, PascalCase for components, and snake_case for database fields.
+________________________________________
+2. UI / Frontend (Expo Go + React Native)
+•	Color scheme:
+o	white (#FFFFFF)
+o	Dark UI elements → dark gray (#202021)
+•	Keep UI modern and professional. No extra colors or unnecessary styling.
+•	Input & submit validation:
+o	Show small UI error messages ("Invalid input, please try again.")
+o	Never crash the app with runtime errors.
+•	Navigation:
+o	Use isAdmin boolean to route users to User Tabs or Admin Tabs.
+•	User Screens:
+o	Home → post images (no text), like posts.
+o	Pets → add pet profile.
+o	Maps → show pet-related shops.
+o	Profile → log out, edit profile → EditProfileScreen.
+•	Admin Screens:
+o	Dashboard → show graphs for users and pets.
+o	Add shops via map picker (no manual lat/lng typing).
+________________________________________
+3. Backend (Next.js + Prisma + Supabase + Vercel)
+•	Use Supabase as the database and storage.
+•	Use Prisma for all database queries.
+•	Use Next.js API routes for backend logic.
+•	APIs must return consistent JSON format:
+•	{
+•	  "success": true/false,
+•	  "data": {},
+•	  "error": "Error message if any"
+•	}
+•	All database interactions must be wrapped in try/catch with error logging.
+________________________________________
+4. Error Handling & Logging
+•	Every feature must include error handling.
+•	Use this pattern:
+•	try {
+•	  // logic
+•	} catch (error) {
+•	  console.error("FeatureName Error:", error);
+•	  // show small message in UI
+•	}
+•	Errors must:
+o	Log details in console.
+o	Show minimal UI-friendly message to the user.
+o	Never break the app with red screen errors.
+________________________________________
+5. File & Code Structure
+•	Project has two folders:
+o	/frontend → Expo Go + React Native.
+o	/backend → Next.js + Prisma.
+•	Organize frontend:
+o	/components → reusable UI components.
+o	/screens → app screens.
+o	/utils → helper functions.
+o	/hooks → custom hooks.
+•	Keep one screen = one file.
+•	If a file grows too big, split logic into separate utility/helper files.
+________________________________________
+6. Deployment Rules
+•	Database: Supabase.
+•	Backend: Vercel.
+•	Frontend: Expo Go during dev → build APK for deployment.
+•	Always ensure builds run without errors before deploying.
+________________________________________
+7. Best Practices (Cursor AI must always follow)
+1.	Consistency
+o	Use Prettier + ESLint formatting.
+o	Stick to the defined color palette.
+2.	Code Quality
+o	Write reusable functions/components.
+o	Avoid duplicate code.
+3.	Performance
+o	Optimize queries (Prisma + Supabase).
+o	Avoid unnecessary re-renders in React Native.
+4.	State Management
+o	Use React hooks (useState, useEffect, useContext).
+o	If data fetching: prefer React Query or SWR.
+5.	Scalability
+o	Prepare code so new features can be added with minimal refactoring.
+o	Use constants/config files for reusable values (API URLs, colors, etc.).
+6.	Security
+o	Sanitize user inputs.
+o	Never expose secrets in frontend. Use .env files.
+7.	Maintainability
+o	Keep functions short and focused (single responsibility principle).
+o	Comment tricky logic.
+o	Use descriptive names for variables, functions, and components.
+1. General Rules
+•	Code must be simple, readable, and maintainable.
+•	Do not overwrite working code when updating; only change the requested parts.
+•	Keep each file under 250 lines. Split into smaller components, utils, or hooks if needed.
+•	Always add comments for complex logic.
+•	Use camelCase for variables/functions, PascalCase for components, and snake_case for database fields.
+________________________________________
+2. UI / Frontend (Expo Go + React Native)
+•	Color scheme:
+o	white (#FFFFFF)
+o	Dark UI elements → dark gray (#202021)
+•	Keep UI modern and professional. No extra colors or unnecessary styling.
+•	Input & submit validation:
+o	Show small UI error messages ("Invalid input, please try again.")
+o	Never crash the app with runtime errors.
+•	Navigation:
+o	Use isAdmin boolean to route users to User Tabs or Admin Tabs.
+•	User Screens:
+o	Home → post images (no text), like posts.
+o	Pets → add pet profile.
+o	Maps → show pet-related shops.
+o	Profile → log out, edit profile → EditProfileScreen.
+•	Admin Screens:
+o	Dashboard → show graphs for users and pets.
+o	Add shops via map picker (no manual lat/lng typing).
+________________________________________
+3. Backend (Next.js + Prisma + Supabase + Vercel)
+•	Use Supabase as the database and storage.
+•	Use Prisma for all database queries.
+•	Use Next.js API routes for backend logic.
+•	APIs must return consistent JSON format:
+•	{
+•	  "success": true/false,
+•	  "data": {},
+•	  "error": "Error message if any"
+•	}
+•	All database interactions must be wrapped in try/catch with error logging.
+________________________________________
+4. Error Handling & Logging
+•	Every feature must include error handling.
+•	Use this pattern:
+•	try {
+•	  // logic
+•	} catch (error) {
+•	  console.error("FeatureName Error:", error);
+•	  // show small message in UI
+•	}
+•	Errors must:
+o	Log details in console.
+o	Show minimal UI-friendly message to the user.
+o	Never break the app with red screen errors.
+________________________________________
+5. File & Code Structure
+•	Project has two folders:
+o	/frontend → Expo Go + React Native.
+o	/backend → Next.js + Prisma.
+•	Organize frontend:
+o	/components → reusable UI components.
+o	/screens → app screens.
+o	/utils → helper functions.
+o	/hooks → custom hooks.
+•	Keep one screen = one file.
+•	If a file grows too big, split logic into separate utility/helper files.
+________________________________________
+6. Deployment Rules
+•	Database: Supabase.
+•	Backend: Vercel.
+•	Frontend: Expo Go during dev → build APK for deployment.
+•	Always ensure builds run without errors before deploying.
+________________________________________
+7. Best Practices (Cursor AI must always follow)
+1.	Consistency
+o	Use Prettier + ESLint formatting.
+o	Stick to the defined color palette.
+2.	Code Quality
+o	Write reusable functions/components.
+o	Avoid duplicate code.
+3.	Performance
+o	Optimize queries (Prisma + Supabase).
+o	Avoid unnecessary re-renders in React Native.
+4.	State Management
+o	Use React hooks (useState, useEffect, useContext).
+o	If data fetching: prefer React Query or SWR.
+5.	Scalability
+o	Prepare code so new features can be added with minimal refactoring.
+o	Use constants/config files for reusable values (API URLs, colors, etc.).
+6.	Security
+o	Sanitize user inputs.
+o	Never expose secrets in frontend. Use .env files.
+7.	Maintainability
+o	Keep functions short and focused (single responsibility principle).
+o	Comment tricky logic.
+o	Use descriptive names for variables, functions, and components.

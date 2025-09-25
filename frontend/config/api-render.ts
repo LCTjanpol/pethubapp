@@ -1,12 +1,12 @@
-// API Configuration
+// API Configuration for Render Deployment
 import axios from 'axios';
 
-// Update this URL to match your backend server address
-export const API_URL = "https://pethub-backend-8dfs.onrender.com/api"; // <-- Updated to Render deployment
+// Render deployment URL - Update this after deploying to Render
+export const API_URL = "https://your-render-app.onrender.com/api";
 
 // Create axios instance with timeout and retry logic
 const apiClient = axios.create({
-  baseURL: API_URL, // Use API_URL as base
+  baseURL: API_URL,
   timeout: 15000, // 15 second timeout
   headers: {
     'Content-Type': 'application/json',
@@ -45,9 +45,9 @@ apiClient.interceptors.response.use(
     } else if (error.code === 'NETWORK_ERROR') {
       console.error('Network error - check connection and server status');
     } else if (error.code === 'ENOTFOUND') {
-      console.error('DNS resolution failed - check the IP address');
+      console.error('DNS resolution failed - check the URL');
     } else if (error.code === 'ECONNREFUSED') {
-      console.error('Connection refused - server not running or wrong port');
+      console.error('Connection refused - server not running');
     }
     
     return Promise.reject(error);
@@ -126,4 +126,4 @@ export const ENDPOINTS = {
   },
 } as const;
 
-export { apiClient }; 
+export { apiClient };
