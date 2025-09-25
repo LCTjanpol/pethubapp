@@ -67,12 +67,12 @@ const Profile = () => {
       return require('../../assets/images/image.png');
     }
     
-    // If it's already a full URL, return as is
+    // If it's already a full URL (Supabase Storage URL), return as is
     if (imagePath.startsWith('http')) {
       return { uri: imagePath };
     }
     
-    // If it starts with /uploads, construct the full URL using API base URL
+    // If it starts with /uploads (legacy local paths), construct the full URL using API base URL
     if (imagePath.startsWith('/uploads')) {
       const baseUrl = API_URL.replace('/api', ''); // Remove /api suffix to get base URL
       return { uri: `${baseUrl}${imagePath}` };

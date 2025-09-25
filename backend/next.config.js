@@ -35,7 +35,7 @@ const nextConfig = {
   
   // Configure images for Next.js Image component
   images: {
-    domains: ['localhost', '10.40.0.230', 'your-render-app.onrender.com'],
+    domains: ['localhost', '10.40.0.230', 'your-render-app.onrender.com', 'kjwbsldbaepwwqsxanok.supabase.co'],
     unoptimized: true,
   },
   

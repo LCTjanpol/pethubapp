@@ -4,6 +4,7 @@ import { authMiddleware } from '../../../lib/middleware';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
 
 export const config = {
   api: {
@@ -71,18 +72,33 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
       if (file) {
         const fileObj = Array.isArray(file) ? file[0] : file;
         if (fileObj && fileObj.originalFilename) {
-          const fileExtension = path.extname(fileObj.originalFilename);
-          const fileName = `${userId}_${post.id}${fileExtension}`;
-          const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-          await fs.mkdir(uploadDir, { recursive: true });
-          const targetPath = path.join(uploadDir, fileName);
-          await fs.copyFile(fileObj.filepath, targetPath);
-          imagePath = `/uploads/${fileName}`;
-          
-          // Update post with the image path
-          const updatedPost = await prisma.post.update({
-            where: { id: post.id },
-            data: { content: imagePath },
+          try {
+            const fileExtension = path.extname(fileObj.originalFilename);
+            const fileName = `${userId}_${post.id}${fileExtension}`;
+            
+            // Read file buffer for Supabase upload
+            const fileBuffer = await fs.readFile(fileObj.filepath);
+            
+            // Determine content type based on file extension
+            let contentType = 'image/jpeg';
+            if (fileExtension === '.png') contentType = 'image/png';
+            else if (fileExtension === '.gif') contentType = 'image/gif';
+            else if (fileExtension === '.webp') contentType = 'image/webp';
+            
+            // Upload to Supabase Storage
+            const uploadResult = await uploadToSupabaseStorage(
+              fileBuffer,
+              STORAGE_BUCKETS.POST_IMAGES,
+              fileName,
+              contentType
+            );
+            
+            imagePath = uploadResult.publicUrl;
+            
+            // Update post with the image URL
+            const updatedPost = await prisma.post.update({
+              where: { id: post.id },
+              data: { content: imagePath },
             include: { 
               user: { select: { fullName: true, profilePicture: true, id: true } },
               comments: {
@@ -99,6 +115,10 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
             },
           });
           return res.status(201).json(updatedPost);
+          } catch (imgErr) {
+            console.error('Error uploading post image:', imgErr);
+            // Continue without image if upload fails
+          }
         }
       }
       

@@ -4,6 +4,7 @@ import { authMiddleware } from '../../../lib/middleware';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
 
 interface AuthedRequest extends NextApiRequest {
   user?: { userId: number };
@@ -76,14 +77,33 @@ const handler = async (req: AuthedRequest, res: NextApiResponse) => {
     if (files.profileImage) {
       const file = Array.isArray(files.profileImage) ? files.profileImage[0] : files.profileImage;
       if (file && file.originalFilename) {
-        const fileExtension = path.extname(file.originalFilename);
-        const fileName = `${userId}_profile${fileExtension}`;
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-        await fs.mkdir(uploadDir, { recursive: true });
-        const targetPath = path.join(uploadDir, fileName);
-        await fs.copyFile(file.filepath, targetPath);
-        profilePicture = `/uploads/${fileName}`;
-        data.profilePicture = profilePicture;
+        try {
+          const fileExtension = path.extname(file.originalFilename);
+          const fileName = `${userId}_profile${fileExtension}`;
+          
+          // Read file buffer for Supabase upload
+          const fileBuffer = await fs.readFile(file.filepath);
+          
+          // Determine content type based on file extension
+          let contentType = 'image/jpeg';
+          if (fileExtension === '.png') contentType = 'image/png';
+          else if (fileExtension === '.gif') contentType = 'image/gif';
+          else if (fileExtension === '.webp') contentType = 'image/webp';
+          
+          // Upload to Supabase Storage
+          const uploadResult = await uploadToSupabaseStorage(
+            fileBuffer,
+            STORAGE_BUCKETS.PROFILE_IMAGES,
+            fileName,
+            contentType
+          );
+          
+          profilePicture = uploadResult.publicUrl;
+          data.profilePicture = profilePicture;
+        } catch (imgErr) {
+          console.error('Error uploading profile image:', imgErr);
+          // Continue without image if upload fails
+        }
       }
     }
 

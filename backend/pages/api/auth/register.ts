@@ -4,6 +4,7 @@ import { hashPassword } from '../../../lib/auth';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
 
 // Add type declarations for formidable
 declare module 'formidable' {
@@ -159,12 +160,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Use userId and email for the filename
           const safeEmail = email.replace(/[^a-zA-Z0-9]/g, '_');
           const fileName = `${user.id}_${safeEmail}${fileExtension}`;
-          const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-          await fs.mkdir(uploadDir, { recursive: true });
-          const targetPath = path.join(uploadDir, fileName);
-          await fs.copyFile(file.filepath, targetPath);
-          profilePicture = `/uploads/${fileName}`;
-          // Update user with the new profilePicture path
+          
+          // Read file buffer for Supabase upload
+          const fileBuffer = await fs.readFile(file.filepath);
+          
+          // Determine content type based on file extension
+          let contentType = 'image/jpeg';
+          if (fileExtension === '.png') contentType = 'image/png';
+          else if (fileExtension === '.gif') contentType = 'image/gif';
+          else if (fileExtension === '.webp') contentType = 'image/webp';
+          
+          // Upload to Supabase Storage
+          const uploadResult = await uploadToSupabaseStorage(
+            fileBuffer,
+            STORAGE_BUCKETS.PROFILE_IMAGES,
+            fileName,
+            contentType
+          );
+          
+          profilePicture = uploadResult.publicUrl;
+          
+          // Update user with the new profilePicture URL
           const updatedUser = await prisma.user.update({
             where: { id: user.id },
             data: { profilePicture },
