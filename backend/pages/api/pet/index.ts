@@ -1,15 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import formidable from 'formidable';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import jwt from 'jsonwebtoken';
-import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
+import { parseForm, config as formidableConfig } from '../../../utils/parseForm';
+import { supabase } from '../../../utils/supabaseClient';
 
-export const config = {
-  api: {
-    bodyParser: false, // Disable the default body parser
-  },
-};
+export const config = formidableConfig;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // Handle CORS preflight requests
@@ -29,24 +25,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
       const userId = decoded.userId;
-      // Parse multipart/form-data
-      const form = formidable({
-        multiples: false,
-        keepExtensions: true,
-        maxFileSize: 5 * 1024 * 1024 // 5MB limit
-      });
-      
-      const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
-        form.parse(req, (err: Error | null, fields: formidable.Fields, files: formidable.Files) => {
-          if (err) {
-            console.error('❌ Form parsing error:', err);
-            reject(err);
-          } else {
-            console.log('✅ Form parsing successful');
-            resolve([fields, files]);
-          }
-        });
-      });
+      // Parse multipart/form-data using utility
+      const { fields, files } = await parseForm(req);
+      console.log('✅ Form parsing successful');
 
       // Safely extract fields as strings
       const name = Array.isArray(fields.name) ? fields.name[0] : fields.name;
@@ -66,18 +47,25 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       if (file) {
         try {
           console.log('📸 Processing pet image upload...');
-          const fileBuffer = await fs.readFile(file.filepath);
           const fileName = `pet_${userId}_${Date.now()}.${file.originalFilename?.split('.').pop() || 'jpg'}`;
           const contentType = file.mimetype || 'image/jpeg';
 
-          const uploadResult = await uploadToSupabaseStorage(
-            fileBuffer,
-            STORAGE_BUCKETS.PET_IMAGES,
-            fileName,
-            contentType
-          );
-          
-          petPicture = uploadResult.publicUrl;
+          // Use streaming upload instead of reading entire file into memory
+          const { data, error } = await supabase.storage
+            .from('pet-images')
+            .upload(fileName, fs.createReadStream(file.filepath), {
+              contentType,
+              upsert: true
+            });
+
+          if (error) throw error;
+
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('pet-images')
+            .getPublicUrl(fileName);
+
+          petPicture = urlData.publicUrl;
           console.log('✅ Pet image uploaded successfully:', petPicture);
         } catch (imgErr) {
           console.error('❌ Error uploading pet image:', imgErr);
