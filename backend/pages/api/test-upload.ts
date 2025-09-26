@@ -18,7 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     } catch (error) {
       console.error('Test upload error:', error);
-      return res.status(500).json({ success: false, error: error.message });
+      return res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   }
   res.json({ success: true, msg: "Test route alive" });
