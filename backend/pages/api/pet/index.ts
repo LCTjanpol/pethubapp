@@ -2,10 +2,14 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
-import { parseForm, config as formidableConfig } from '../../../utils/parseForm';
+import { parseForm } from '../../../utils/parseForm';
 import { supabase } from '../../../utils/supabaseClient';
 
-export const config = formidableConfig;
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // Handle CORS preflight requests
@@ -51,7 +55,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           const contentType = file.mimetype || 'image/jpeg';
 
           // Use streaming upload instead of reading entire file into memory
-          const { data, error } = await supabase.storage
+          const { error } = await supabase.storage
             .from('pet-images')
             .upload(fileName, fs.createReadStream(file.filepath), {
               contentType,

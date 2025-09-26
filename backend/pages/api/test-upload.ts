@@ -1,7 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { parseForm, config as formidableConfig } from '../../utils/parseForm';
+import { parseForm } from '../../utils/parseForm';
 
-export const config = formidableConfig;
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
