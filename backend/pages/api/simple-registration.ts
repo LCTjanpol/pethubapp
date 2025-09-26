@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '../../../lib/prisma';
-import { hashPassword } from '../../../lib/auth';
+import prisma from '../../lib/prisma';
+import { hashPassword } from '../../lib/auth';
 
 export const config = {
   api: {
