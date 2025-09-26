@@ -122,7 +122,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
               }
             },
           });
-          return res.status(201).json(updatedPost);
+          return res.status(201).json({
+            success: true,
+            data: updatedPost,
+            message: 'Post created successfully'
+          });
           } catch (imgErr) {
             console.error('Error uploading post image:', imgErr);
             // Continue without image if upload fails
@@ -131,10 +135,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
       
       // If no image, return the original post with user info
-      return res.status(201).json(post);
+      return res.status(201).json({
+        success: true,
+        data: post,
+        message: 'Post created successfully'
+      });
     } catch (error) {
       console.error('POST /api/post error:', error);
-      return res.status(500).json({ message: 'Failed to create post', error });
+      return res.status(500).json({ 
+        success: false,
+        message: 'Failed to create post', 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   }
 

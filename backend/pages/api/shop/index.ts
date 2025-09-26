@@ -153,7 +153,11 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
       });
 
           console.log('✅ Shop created successfully:', shop.id);
-          return res.status(201).json(shop);
+          return res.status(201).json({
+            success: true,
+            data: shop,
+            message: 'Shop created successfully'
+          });
         } catch (error) {
           console.error('❌ Error creating shop:', error);
           console.error('❌ Error details:', {
@@ -161,6 +165,7 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
             stack: error instanceof Error ? error.stack : undefined
           });
           return res.status(500).json({ 
+            success: false,
             message: 'Failed to create shop',
             error: error instanceof Error ? error.message : 'Unknown error'
           });

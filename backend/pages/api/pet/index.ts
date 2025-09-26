@@ -85,11 +85,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       });
 
       console.log('✅ Pet created successfully:', pet.id);
-      return res.status(201).json(pet);
+      return res.status(201).json({
+        success: true,
+        data: pet,
+        message: 'Pet created successfully'
+      });
       
     } catch (error) {
       console.error('❌ Pet creation error:', error);
-      return res.status(500).json({ message: 'Failed to create pet', error });
+      return res.status(500).json({ 
+        success: false,
+        message: 'Failed to create pet', 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   }
 
