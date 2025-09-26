@@ -1,59 +1,112 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import { authMiddleware } from '../../../lib/middleware';
+import jwt from 'jsonwebtoken';
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  const userId = req.user?.userId;
-  const postId = parseInt(req.query.id as string);
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-  if (req.method === 'PUT') {
-    const { likes } = req.body;
-    
-    // Validate that likes is a number (-1 for unlike, 1 for like)
-    if (typeof likes !== 'number' || (likes !== -1 && likes !== 1)) {
-      return res.status(400).json({ message: 'Invalid likes value. Must be -1 or 1.' });
-    }
-    
-    const post = await prisma.post.update({
-      where: { id: postId },
-      data: { likes: { increment: likes } },
+  const { id } = req.query;
+
+  if (!id || Array.isArray(id)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Post ID is required'
     });
-    return res.status(200).json(post);
   }
 
   if (req.method === 'DELETE') {
     try {
-      // First check if the post exists and belongs to the user
-      const existingPost = await prisma.post.findFirst({
-        where: { id: postId, userId },
-      });
-
-      if (!existingPost) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Post not found or you do not have permission to delete it' 
+      console.log('🗑️ Post deletion request received for ID:', id);
+      
+      // Authenticate user inline
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token) {
+        return res.status(401).json({ 
+          success: false,
+          message: 'No token provided' 
         });
       }
 
-      // Delete the post and all related data (comments, replies)
-      await prisma.post.delete({
-        where: { id: postId, userId },
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
+      const userId = decoded.userId;
+
+      // Check database connection
+      try {
+        await prisma.$connect();
+        console.log('✅ Database connected successfully');
+      } catch (dbError) {
+        console.error('❌ Database connection failed:', dbError);
+        return res.status(500).json({
+          success: false,
+          message: 'Database connection failed',
+          error: dbError instanceof Error ? dbError.message : 'Unknown database error'
+        });
+      }
+
+      // Check if post exists and belongs to user
+      const post = await prisma.post.findUnique({
+        where: { id: parseInt(id) },
+        include: { user: { select: { id: true } } }
       });
 
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Post deleted successfully' 
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          message: 'Post not found'
+        });
+      }
+
+      // Check if user owns the post
+      if (post.user.id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only delete your own posts'
+        });
+      }
+
+      // Delete the post (cascade will handle comments and replies)
+      await prisma.post.delete({
+        where: { id: parseInt(id) }
       });
+
+      console.log('✅ Post deleted successfully:', id);
+
+      // Disconnect from database
+      try {
+        await prisma.$disconnect();
+        console.log('✅ Database disconnected successfully');
+      } catch (disconnectError) {
+        console.error('⚠️ Database disconnect warning:', disconnectError);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Post deleted successfully'
+      });
+
     } catch (error) {
-      console.error('Error deleting post:', error);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Failed to delete post' 
+      console.error('❌ Post deletion error:', error);
+      
+      // Ensure database disconnection on error
+      try {
+        await prisma.$disconnect();
+      } catch (disconnectError) {
+        console.error('⚠️ Database disconnect error:', disconnectError);
+      }
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete post',
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 
-  return res.status(405).json({ message: 'Method not allowed' });
-};
-
-export default authMiddleware(handler);
+  return res.status(405).json({
+    success: false,
+    message: 'Method not allowed'
+  });
+}

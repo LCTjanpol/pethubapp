@@ -105,9 +105,28 @@ export default function RegisterScreen() {
       
       console.log('Response received:', response.status, response.data);
       
-      // TODO: Handle profile image upload separately after user creation
-      if (profileImage) {
-        console.log('Profile image selected but not uploaded yet - will implement separate image upload later');
+      // Handle profile image upload after user creation
+      if (profileImage && response.data?.userId) {
+        console.log('Uploading profile image...');
+        try {
+          const formData = new FormData();
+          formData.append('userId', response.data.userId.toString());
+          formData.append('profileImage', {
+            uri: profileImage,
+            type: 'image/jpeg',
+            name: 'profile.jpg',
+          } as any);
+
+          const imageResponse = await apiClient.post('/user/upload-profile-image', formData, {
+            timeout: 30000,
+          });
+          
+          console.log('Profile image uploaded successfully:', imageResponse.data);
+        } catch (imageError) {
+          console.error('Profile image upload failed:', imageError);
+          // Don't fail registration if image upload fails
+          console.log('Continuing with registration - image upload failed but user created');
+        }
       }
 
       console.log('Registration successful:', response.data);

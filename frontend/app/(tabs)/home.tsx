@@ -322,6 +322,44 @@ const Home = () => {
     }
   };
 
+  // Delete post
+  const handleDeletePost = async (postId: number) => {
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await getToken();
+              if (!token) {
+                Alert.alert('Session expired', 'Please log in again.');
+                navigation.reset({ index: 0, routes: [{ name: 'auth/login' as never }] });
+                return;
+              }
+
+              await apiClient.delete(ENDPOINTS.POST.DELETE(postId.toString()), {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+
+              Alert.alert('Success', 'Post deleted successfully!');
+              fetchPosts(token);
+            } catch (error: any) {
+              console.error('Error deleting post:', error);
+              Alert.alert('Error', 'Failed to delete post.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
 
   // Pull to refresh functionality
   const onRefresh = async () => {
@@ -509,6 +547,17 @@ const Home = () => {
             <Text style={styles.commentIcon}>💬</Text>
             <Text style={styles.commentCount}>{item.comments.length} comments</Text>
           </TouchableOpacity>
+
+          {/* Delete button - only show for user's own posts */}
+          {currentUser && item.user.id === currentUser.id && (
+            <TouchableOpacity 
+              onPress={() => handleDeletePost(item.id)}
+              style={styles.deleteButton}
+            >
+              <Text style={styles.deleteIcon}>🗑️</Text>
+              <Text style={styles.deleteText}>Delete</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Show recent comments */}
@@ -1012,6 +1061,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: PetHubColors.white,
     fontWeight: '600',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 20,
+  },
+  deleteIcon: {
+    fontSize: 18,
+    marginRight: 6,
+  },
+  deleteText: {
+    fontSize: 14,
+    color: '#FF4444',
+    fontWeight: '500',
   },
 });
 
