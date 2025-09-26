@@ -43,30 +43,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       // Extract caption from form fields
       const caption = Array.isArray(fields.caption) ? fields.caption[0] : fields.caption || '';
 
-      // Create the post first (without image)
-      const post = await prisma.post.create({
-        data: { 
-          userId, 
-          content: '', // Will be updated with image path
-          caption: caption || null 
-        },
-        include: { 
-          user: { select: { fullName: true, profilePicture: true, id: true } },
-          comments: {
-            include: {
-              user: { select: { fullName: true, profilePicture: true, id: true } },
-              replies: {
-                include: {
-                  user: { select: { fullName: true, profilePicture: true, id: true } }
-                }
-              }
-            },
-            orderBy: { createdAt: 'desc' }
-          }
-        },
-      });
-
-      // Handle image upload if present
+      // Handle image upload first if present
       let imagePath = '';
       const file = files.image?.[0] || files.file?.[0] || null; // Accept both 'image' and 'file' keys
       
@@ -74,8 +51,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const fileObj = Array.isArray(file) ? file[0] : file;
         if (fileObj && fileObj.originalFilename) {
           try {
+            console.log('📸 Processing post image upload...');
             const fileExtension = path.extname(fileObj.originalFilename);
-            const fileName = `${userId}_${post.id}${fileExtension}`;
+            const fileName = `post_${userId}_${Date.now()}${fileExtension}`;
             
             // Determine content type based on file extension
             let contentType = 'image/jpeg';
@@ -102,39 +80,39 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
               .getPublicUrl(fileName);
 
             imagePath = urlData.publicUrl;
-            
-            // Update post with the image URL
-            const updatedPost = await prisma.post.update({
-              where: { id: post.id },
-              data: { content: imagePath },
-            include: { 
-              user: { select: { fullName: true, profilePicture: true, id: true } },
-              comments: {
-                include: {
-                  user: { select: { fullName: true, profilePicture: true, id: true } },
-                  replies: {
-                    include: {
-                      user: { select: { fullName: true, profilePicture: true, id: true } }
-                    }
-                  }
-                },
-                orderBy: { createdAt: 'desc' }
-              }
-            },
-          });
-          return res.status(201).json({
-            success: true,
-            data: updatedPost,
-            message: 'Post created successfully'
-          });
+            console.log('✅ Post image uploaded successfully:', imagePath);
           } catch (imgErr) {
-            console.error('Error uploading post image:', imgErr);
+            console.error('❌ Error uploading post image:', imgErr);
             // Continue without image if upload fails
           }
         }
       }
       
-      // If no image, return the original post with user info
+      // Create the post with image path or caption
+      const postContent = imagePath || caption || '';
+      const post = await prisma.post.create({
+        data: { 
+          userId, 
+          content: postContent,
+          caption: caption || null 
+        },
+        include: { 
+          user: { select: { fullName: true, profilePicture: true, id: true } },
+          comments: {
+            include: {
+              user: { select: { fullName: true, profilePicture: true, id: true } },
+              replies: {
+                include: {
+                  user: { select: { fullName: true, profilePicture: true, id: true } }
+                }
+              }
+            },
+            orderBy: { createdAt: 'desc' }
+          }
+        },
+      });
+
+      console.log('✅ Post created successfully:', post.id);
       return res.status(201).json({
         success: true,
         data: post,
