@@ -82,7 +82,6 @@ const EditPetProfileScreen = () => {
       }
       await apiClient.put(ENDPOINTS.PET.UPDATE(petId), formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
         },
       });

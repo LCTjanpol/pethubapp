@@ -103,7 +103,7 @@ export default function RegisterScreen() {
         // Use axios directly for FormData to handle file uploads properly
         response = await axios.post(`${API_URL}${ENDPOINTS.AUTH.REGISTER}`, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            // Don't set Content-Type for multipart/form-data - let axios handle it
           },
           timeout: 30000, // 30 second timeout for file uploads
         });

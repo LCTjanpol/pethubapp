@@ -129,7 +129,6 @@ const EditProfileScreen = () => {
       }
       await apiClient.put(ENDPOINTS.USER.PROFILE, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token || ''}`,
         },
       });

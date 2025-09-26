@@ -50,7 +50,6 @@ const AddPetScreen = () => {
       }
       await apiClient.post(ENDPOINTS.PET.LIST, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
         },
       });

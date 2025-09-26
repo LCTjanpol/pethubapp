@@ -62,7 +62,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       let petPicture = null;
 
       // Handle image upload if present
-      const file = files.image?.[0] || files.file?.[0] || null;
+      const file = files.petPicture?.[0] || files.image?.[0] || files.file?.[0] || null;
       if (file) {
         try {
           console.log('📸 Processing pet image upload...');

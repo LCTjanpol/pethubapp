@@ -258,7 +258,6 @@ const Home = () => {
 
       await apiClient.post(ENDPOINTS.POST.LIST, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
         },
       });
