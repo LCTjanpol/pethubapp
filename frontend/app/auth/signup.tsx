@@ -115,6 +115,14 @@ export default function RegisterScreen() {
         // Handle registration without profile image - use simple endpoint
         console.log('Sending registration request without image...');
         console.log('Request URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER_SIMPLE}`);
+        console.log('Request data:', {
+          fullName: fullName.trim(),
+          email: email.trim().toLowerCase(),
+          birthdate,
+          gender: gender.trim(),
+          password: '***hidden***'
+        });
+        
         response = await apiClient.post(ENDPOINTS.AUTH.REGISTER_SIMPLE, {
           fullName: fullName.trim(),
           email: email.trim().toLowerCase(),
@@ -122,6 +130,8 @@ export default function RegisterScreen() {
           gender: gender.trim(),
           password,
         });
+        
+        console.log('Response received:', response.status, response.data);
       }
 
       console.log('Registration successful:', response.data);
@@ -138,6 +148,18 @@ export default function RegisterScreen() {
       );
     } catch (error: any) {
       console.error('Registration error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL
+        }
+      });
       
       // Handle different error types with user-friendly messages
       let message = 'Registration failed. Please try again.';
@@ -150,6 +172,8 @@ export default function RegisterScreen() {
         message = error.response.data?.message || 'Invalid registration data. Please check your inputs.';
       } else if (error.response?.data?.message) {
         message = error.response.data.message;
+      } else if (error.message) {
+        message = `Network error: ${error.message}`;
       }
       
       Alert.alert("Registration Failed", message);
