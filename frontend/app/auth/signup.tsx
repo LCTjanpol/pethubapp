@@ -104,8 +104,8 @@ export default function RegisterScreen() {
         console.log('Sending registration request with image...');
         console.log('Request URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER}`);
         
-        // Use axios directly for FormData to handle file uploads properly
-        response = await axios.post(`${API_URL}${ENDPOINTS.AUTH.REGISTER}`, formData, {
+        // Use apiClient for FormData to handle file uploads properly
+        response = await apiClient.post(ENDPOINTS.AUTH.REGISTER, formData, {
           headers: {
             // Don't set Content-Type for multipart/form-data - let axios handle it
           },
