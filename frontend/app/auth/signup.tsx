@@ -78,6 +78,9 @@ export default function RegisterScreen() {
 
     try {
       console.log('Starting registration...'); 
+      console.log('API_URL:', API_URL);
+      console.log('ENDPOINTS.AUTH.REGISTER:', ENDPOINTS.AUTH.REGISTER);
+      console.log('Full URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER}`);
       
       let response;
       
@@ -99,6 +102,7 @@ export default function RegisterScreen() {
         } as any);
 
         console.log('Sending registration request with image...');
+        console.log('Request URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER}`);
         
         // Use axios directly for FormData to handle file uploads properly
         response = await axios.post(`${API_URL}${ENDPOINTS.AUTH.REGISTER}`, formData, {
@@ -110,6 +114,7 @@ export default function RegisterScreen() {
       } else {
         // Handle registration without profile image
         console.log('Sending registration request without image...');
+        console.log('Request URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER}`);
         response = await apiClient.post(ENDPOINTS.AUTH.REGISTER, {
           fullName: fullName.trim(),
           email: email.trim().toLowerCase(),
