@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { PetHubColors } from '../constants/Colors';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,15 +6,18 @@ import { router } from 'expo-router';
 
 const IndexScreen = () => {
   const { isLoading, isAuthenticated, checkAuthStatus, user } = useAuth();
+  const hasNavigated = useRef(false); // Flag to prevent multiple navigation attempts
 
   // Check authentication status on component mount
   useEffect(() => {
     checkAuthStatus();
-  }, [checkAuthStatus]);
+  }, []); // Remove checkAuthStatus from dependencies to prevent infinite loop
 
   // Handle navigation when authentication status changes
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !hasNavigated.current) {
+      hasNavigated.current = true; // Set flag to prevent multiple navigation attempts
+      
       console.log('=== ROUTING DECISION ===');
       console.log('User:', user.fullName);
       console.log('isAdmin:', user.isAdmin);
@@ -34,6 +37,7 @@ const IndexScreen = () => {
           }
         } catch (error) {
           console.error('❌ Navigation error:', error);
+          hasNavigated.current = false; // Reset flag on error
           // Fallback navigation if there's an error
           try {
             router.replace('/auth/login');

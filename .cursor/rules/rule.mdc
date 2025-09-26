@@ -6,6 +6,8 @@ alwaysApply: true
 
 Do not push to GitHub just to test fixes.
 
+Do not change working codes and features only the issued command or fixed are to be worked.
+
 Cursor must confirm fixes locally first (e.g., linting, type checks, running dev server).
 
 Only push when changes are:
