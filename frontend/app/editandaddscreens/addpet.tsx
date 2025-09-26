@@ -56,6 +56,19 @@ const AddPetScreen = () => {
       Alert.alert('Success', 'Pet added!');
       navigation.goBack();
     } catch (error: any) {
+      console.error('Pet creation error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL
+        }
+      });
       Alert.alert('Error', 'Failed to add pet: ' + (error?.message || 'Unknown error'));
     }
   };
