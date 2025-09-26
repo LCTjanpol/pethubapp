@@ -128,7 +128,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           else if (fileExtension === '.webp') contentType = 'image/webp';
           
           // Upload to Supabase Storage
-          const { data, error } = await supabase.storage
+          const { error } = await supabase.storage
             .from('profile-images')
             .upload(fileName, fileBuffer, {
               contentType,
