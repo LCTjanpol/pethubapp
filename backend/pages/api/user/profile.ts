@@ -27,7 +27,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
     userId = decoded.userId;
-  } catch (error) {
+  } catch {
     return res.status(401).json({ message: 'Invalid token' });
   }
 
