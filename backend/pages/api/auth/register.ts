@@ -27,10 +27,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     console.log('Starting registration process...'); // Debug log
+    console.log('Request headers:', req.headers);
+    console.log('Content-Type:', req.headers['content-type']);
 
     // Parse multipart/form-data using utility
     const { fields, files } = await parseForm(req);
     console.log('✅ Form parsing successful');
+    console.log('Parsed fields:', Object.keys(fields));
+    console.log('Parsed files:', Object.keys(files));
 
     // Extract fields
     const fullName = Array.isArray(fields.fullName) ? fields.fullName[0]?.trim() : fields.fullName?.trim() || '';
