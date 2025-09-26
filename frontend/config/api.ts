@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Update this URL to match your backend server address
-export const API_URL = "http://localhost:3000/api"; // <-- Local development (port 3000)
+export const API_URL = "https://pethub-backend-8dfs.onrender.com/api"; // <-- Render deployment
 
 // Debug logging
 console.log('🔧 API Configuration loaded:', {
