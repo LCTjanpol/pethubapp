@@ -84,32 +84,78 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    // Check database connection first
+    try {
+      await prisma.$connect();
+      console.log('✅ Database connected successfully');
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError);
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection failed',
+        error: dbError instanceof Error ? dbError.message : 'Unknown database error'
+      });
+    }
+
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({ 
-      where: { email: email as string } 
-    });
+    let existingUser;
+    try {
+      existingUser = await prisma.user.findUnique({ 
+        where: { email: email as string } 
+      });
+      console.log('✅ User lookup completed');
+    } catch (lookupError) {
+      console.error('❌ User lookup failed:', lookupError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to check existing user',
+        error: lookupError instanceof Error ? lookupError.message : 'Unknown lookup error'
+      });
+    }
     
     if (existingUser) {
-      console.log('User already exists:', email); // Debug log
+      console.log('User already exists:', email);
       return res.status(400).json({ 
         success: false,
         message: 'Email already exists' 
       });
     }
 
-    // Hash password and create user (initially without profilePicture)
-    const hashedPassword = await hashPassword(password as string);
-    const user = await prisma.user.create({
-      data: {
-        fullName: fullName as string,
-        gender: gender as string,
-        birthdate: birthDate,
-        email: email as string,
-        password: hashedPassword,
-        profilePicture: null, // Set later if image is uploaded
-      },
-    });
-    console.log('User created:', user.id);
+    // Hash password and create user
+    let hashedPassword;
+    try {
+      hashedPassword = await hashPassword(password as string);
+      console.log('✅ Password hashed successfully');
+    } catch (hashError) {
+      console.error('❌ Password hashing failed:', hashError);
+      return res.status(500).json({
+        success: false,
+        message: 'Password hashing failed',
+        error: hashError instanceof Error ? hashError.message : 'Unknown hashing error'
+      });
+    }
+
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          fullName: fullName as string,
+          gender: gender as string,
+          birthdate: birthDate,
+          email: email as string,
+          password: hashedPassword,
+          profilePicture: null, // Set later if image is uploaded
+        },
+      });
+      console.log('✅ User created successfully:', user.id);
+    } catch (createError) {
+      console.error('❌ User creation failed:', createError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create user',
+        error: createError instanceof Error ? createError.message : 'Unknown creation error'
+      });
+    }
 
     let profilePicture = null;
     if (profileImage) {
@@ -167,13 +213,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('No profile image uploaded');
     }
 
+    // Disconnect from database
+    try {
+      await prisma.$disconnect();
+      console.log('✅ Database disconnected successfully');
+    } catch (disconnectError) {
+      console.error('⚠️ Database disconnect warning:', disconnectError);
+    }
+
     return res.status(201).json({
       success: true,
       message: 'User registered successfully',
       userId: user.id
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('❌ Registration error:', error);
+    
+    // Ensure database disconnection on error
+    try {
+      await prisma.$disconnect();
+    } catch (disconnectError) {
+      console.error('⚠️ Database disconnect error:', disconnectError);
+    }
+    
     return res.status(500).json({
       success: false,
       message: 'An error occurred during registration',
