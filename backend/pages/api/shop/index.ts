@@ -106,10 +106,13 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
             
             console.log('📤 Shop creation - Upload details:', { fileName, contentType });
             
-            // Use streaming upload instead of reading entire file into memory
-            const { error } = await supabase.storage
+            // Use buffer upload (temporary fix for Render compatibility)
+            const { promises: fsPromises } = await import('fs');
+            const fileBuffer = await fsPromises.readFile(fileObj.filepath);
+            
+            const { data, error } = await supabase.storage
               .from('shop-images')
-              .upload(fileName, fs.createReadStream(fileObj.filepath), {
+              .upload(fileName, fileBuffer, {
                 contentType,
                 upsert: true
               });

@@ -84,10 +84,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             else if (fileExtension === '.gif') contentType = 'image/gif';
             else if (fileExtension === '.webp') contentType = 'image/webp';
             
-            // Use streaming upload instead of reading entire file into memory
-            const { error } = await supabase.storage
+            // Use buffer upload (temporary fix for Render compatibility)
+            const { promises: fsPromises } = await import('fs');
+            const fileBuffer = await fsPromises.readFile(fileObj.filepath);
+            
+            const { data, error } = await supabase.storage
               .from('post-images')
-              .upload(fileName, fs.createReadStream(fileObj.filepath), {
+              .upload(fileName, fileBuffer, {
                 contentType,
                 upsert: true
               });

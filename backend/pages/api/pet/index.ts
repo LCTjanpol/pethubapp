@@ -54,10 +54,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           const fileName = `pet_${userId}_${Date.now()}.${file.originalFilename?.split('.').pop() || 'jpg'}`;
           const contentType = file.mimetype || 'image/jpeg';
 
-          // Use streaming upload instead of reading entire file into memory
-          const { error } = await supabase.storage
+          // Use buffer upload (temporary fix for Render compatibility)
+          const { promises: fsPromises } = await import('fs');
+          const fileBuffer = await fsPromises.readFile(file.filepath);
+          
+          const { data, error } = await supabase.storage
             .from('pet-images')
-            .upload(fileName, fs.createReadStream(file.filepath), {
+            .upload(fileName, fileBuffer, {
               contentType,
               upsert: true
             });
