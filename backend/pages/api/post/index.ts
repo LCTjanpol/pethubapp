@@ -1,14 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import formidable from 'formidable';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
-import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
+import { parseForm } from '../../../utils/parseForm';
+import { supabase } from '../../../utils/supabaseClient';
 
 export const config = {
   api: {
-    bodyParser: false, // Disable the default body parser
+    bodyParser: false,
   },
 };
 
@@ -33,19 +33,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
       const userId = decoded.userId;
 
-      // Parse multipart/form-data
-      const form = formidable({
-        multiples: false,
-        keepExtensions: true,
-        maxFileSize: 5 * 1024 * 1024 // 5MB limit
-      });
-      
-      const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
-        form.parse(req, (err: Error | null, fields: formidable.Fields, files: formidable.Files) => {
-          if (err) reject(err);
-          else resolve([fields, files]);
-        });
-      });
+      // Parse multipart/form-data using utility
+      const { fields, files } = await parseForm(req);
+      console.log('✅ Form parsing successful');
 
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized: userId missing' });
@@ -88,24 +78,28 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             const fileExtension = path.extname(fileObj.originalFilename);
             const fileName = `${userId}_${post.id}${fileExtension}`;
             
-            // Read file buffer for Supabase upload
-            const fileBuffer = await fs.readFile(fileObj.filepath);
-            
             // Determine content type based on file extension
             let contentType = 'image/jpeg';
             if (fileExtension === '.png') contentType = 'image/png';
             else if (fileExtension === '.gif') contentType = 'image/gif';
             else if (fileExtension === '.webp') contentType = 'image/webp';
             
-            // Upload to Supabase Storage
-            const uploadResult = await uploadToSupabaseStorage(
-              fileBuffer,
-              STORAGE_BUCKETS.POST_IMAGES,
-              fileName,
-              contentType
-            );
-            
-            imagePath = uploadResult.publicUrl;
+            // Use streaming upload instead of reading entire file into memory
+            const { error } = await supabase.storage
+              .from('post-images')
+              .upload(fileName, fs.createReadStream(fileObj.filepath), {
+                contentType,
+                upsert: true
+              });
+
+            if (error) throw error;
+
+            // Get public URL
+            const { data: urlData } = supabase.storage
+              .from('post-images')
+              .getPublicUrl(fileName);
+
+            imagePath = urlData.publicUrl;
             
             // Update post with the image URL
             const updatedPost = await prisma.post.update({

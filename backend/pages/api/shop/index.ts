@@ -1,14 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import formidable from 'formidable';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
-import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
+import { parseForm } from '../../../utils/parseForm';
+import { supabase } from '../../../utils/supabaseClient';
 
 export const config = {
   api: {
-    bodyParser: false, // Disable default body parser for file uploads
+    bodyParser: false,
   },
 };
 
@@ -57,25 +57,9 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
       console.log('📋 Request headers:', req.headers);
       console.log('📋 Content-Type:', req.headers['content-type']);
       
-      // Parse multipart/form-data for file uploads
-      const form = formidable({
-        multiples: false,
-        keepExtensions: true,
-        maxFileSize: 10 * 1024 * 1024 // 10MB limit
-      });
-
-      console.log('📤 Starting form parsing...');
-      const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
-        form.parse(req, (err: Error | null, fields: formidable.Fields, files: formidable.Files) => {
-          if (err) {
-            console.error('❌ Form parsing error:', err);
-            reject(err);
-          } else {
-            console.log('✅ Form parsing successful');
-            resolve([fields, files]);
-          }
-        });
-      });
+      // Parse multipart/form-data using utility
+      const { fields, files } = await parseForm(req);
+      console.log('✅ Form parsing successful');
 
       // Extract form data
       const name = Array.isArray(fields.name) ? fields.name[0] : fields.name;
@@ -114,26 +98,30 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
             
             console.log('📤 Shop creation - Uploading image to Supabase:', fileName);
             
-            // Read file buffer for Supabase upload
-            const fileBuffer = await fs.readFile(fileObj.filepath);
-            
             // Determine content type based on file extension
             let contentType = 'image/jpeg';
             if (fileExtension === '.png') contentType = 'image/png';
             else if (fileExtension === '.gif') contentType = 'image/gif';
             else if (fileExtension === '.webp') contentType = 'image/webp';
             
-            console.log('📤 Shop creation - Upload details:', { fileName, contentType, bufferSize: fileBuffer.length });
+            console.log('📤 Shop creation - Upload details:', { fileName, contentType });
             
-            // Upload to Supabase Storage
-            const uploadResult = await uploadToSupabaseStorage(
-              fileBuffer,
-              STORAGE_BUCKETS.SHOP_IMAGES,
-              fileName,
-              contentType
-            );
-            
-            imagePath = uploadResult.publicUrl;
+            // Use streaming upload instead of reading entire file into memory
+            const { error } = await supabase.storage
+              .from('shop-images')
+              .upload(fileName, fs.createReadStream(fileObj.filepath), {
+                contentType,
+                upsert: true
+              });
+
+            if (error) throw error;
+
+            // Get public URL
+            const { data: urlData } = supabase.storage
+              .from('shop-images')
+              .getPublicUrl(fileName);
+
+            imagePath = urlData.publicUrl;
             console.log('✅ Shop creation - Image uploaded to Supabase:', imagePath);
           } catch (imgErr) {
             console.error('❌ Shop creation - Error uploading shop image:', imgErr);
