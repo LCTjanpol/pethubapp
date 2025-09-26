@@ -15,8 +15,9 @@ const IndexScreen = () => {
 
   // Handle navigation when authentication status changes
   useEffect(() => {
-    if (isAuthenticated && user && !hasNavigated.current) {
-      hasNavigated.current = true; // Set flag to prevent multiple navigation attempts
+    if (isAuthenticated && user) {
+      // Reset navigation flag when user changes to allow re-navigation
+      hasNavigated.current = false;
       
       console.log('=== ROUTING DECISION ===');
       console.log('User:', user.fullName);
@@ -26,23 +27,27 @@ const IndexScreen = () => {
       
       // Small delay to ensure routes are fully loaded
       setTimeout(() => {
-        try {
-          if (user.isAdmin === true) {
-            console.log('✅ ADMIN USER - Navigating to admin dashboard');
-            router.replace('/admin/dashboard');
-          } else {
-            console.log('✅ REGULAR USER - Navigating to user tabs');
-            // Navigate to tabs layout - default to home tab
-            router.replace('/(tabs)/home');
-          }
-        } catch (error) {
-          console.error('❌ Navigation error:', error);
-          hasNavigated.current = false; // Reset flag on error
-          // Fallback navigation if there's an error
+        if (!hasNavigated.current) {
+          hasNavigated.current = true; // Set flag to prevent multiple navigation attempts
+          
           try {
-            router.replace('/auth/login');
-          } catch (fallbackError) {
-            console.error('❌ Fallback navigation failed:', fallbackError);
+            if (user.isAdmin === true) {
+              console.log('✅ ADMIN USER - Navigating to admin dashboard');
+              router.replace('/admin/dashboard');
+            } else {
+              console.log('✅ REGULAR USER - Navigating to user tabs');
+              // Navigate to tabs layout - default to home tab
+              router.replace('/(tabs)/home');
+            }
+          } catch (error) {
+            console.error('❌ Navigation error:', error);
+            hasNavigated.current = false; // Reset flag on error
+            // Fallback navigation if there's an error
+            try {
+              router.replace('/auth/login');
+            } catch (fallbackError) {
+              console.error('❌ Fallback navigation failed:', fallbackError);
+            }
           }
         }
       }, 100);

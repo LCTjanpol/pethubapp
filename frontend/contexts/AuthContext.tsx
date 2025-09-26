@@ -115,6 +115,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsAuthenticated(true);
 
       console.log('Login successful:', userData.fullName);
+      console.log('Admin status:', adminStatus);
+      console.log('Complete user data:', completeUserData);
 
       // Don't navigate here - let the index screen handle routing
       // This prevents routing conflicts and ensures proper navigation flow
