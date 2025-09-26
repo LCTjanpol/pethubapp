@@ -1,18 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
 import { hashPassword } from '../../../lib/auth';
-import formidable from 'formidable';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { uploadToSupabaseStorage, STORAGE_BUCKETS } from '../../../lib/supabase-storage';
+import { parseForm } from '../../../utils/parseForm';
+import { supabase } from '../../../utils/supabaseClient';
 
-// Add type declarations for formidable
-declare module 'formidable' {
-  interface File {
-    filepath: string;
-    originalFilename: string | null;
-  }
-}
 
 export const config = {
   api: {
@@ -36,54 +27,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     console.log('Starting registration process...'); // Debug log
 
-    // Check content type to determine if it's multipart form data
-    const contentType = req.headers['content-type'] || '';
-    let fullName: string, gender: string, birthdate: string, email: string, password: string;
-    let profileImage: formidable.File | null = null;
+    // Parse multipart/form-data using utility
+    const { fields, files } = await parseForm(req);
+    console.log('✅ Form parsing successful');
 
-    if (contentType.includes('multipart/form-data')) {
-      // Handle form data with potential file upload
-      const form = formidable({ 
-        multiples: true,
-        keepExtensions: true,
-        maxFileSize: 25 * 1024 * 1024 // 25MB limit
-      });
+    // Extract fields
+    const fullName = Array.isArray(fields.fullName) ? fields.fullName[0]?.trim() : fields.fullName?.trim() || '';
+    const gender = Array.isArray(fields.gender) ? fields.gender[0]?.trim() : fields.gender?.trim() || '';
+    const birthdate = Array.isArray(fields.birthdate) ? fields.birthdate[0]?.trim() : fields.birthdate?.trim() || '';
+    const email = Array.isArray(fields.email) ? fields.email[0]?.trim().toLowerCase() : fields.email?.trim().toLowerCase() || '';
+    const password = Array.isArray(fields.password) ? fields.password[0] : fields.password || '';
 
-      const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
-        form.parse(req, (err: Error | null, fields: formidable.Fields, files: formidable.Files) => {
-          if (err) {
-            console.error('Form parsing error:', err);
-            reject(err);
-          }
-          console.log('Parsed fields:', fields); // Debug log
-          console.log('Parsed files:', files); // Debug log
-          resolve([fields, files]);
-        });
-      });
-
-      // Extract fields
-      fullName = fields.fullName?.[0]?.trim() || '';
-      gender = fields.gender?.[0]?.trim() || '';
-      birthdate = fields.birthdate?.[0]?.trim() || '';
-      email = fields.email?.[0]?.trim().toLowerCase() || '';
-      password = fields.password?.[0] || '';
-      profileImage = files.profileImage?.[0] || null;
-    } else {
-      // Handle JSON data (no file upload)
-      const body = await new Promise<string>((resolve, reject) => {
-        let data = '';
-        req.on('data', chunk => data += chunk);
-        req.on('end', () => resolve(data));
-        req.on('error', reject);
-      });
-
-      const jsonData = JSON.parse(body);
-      fullName = jsonData.fullName?.trim() || '';
-      gender = jsonData.gender?.trim() || '';
-      birthdate = jsonData.birthdate?.trim() || '';
-      email = jsonData.email?.trim().toLowerCase() || '';
-      password = jsonData.password || '';
-    }
+    // Extract profile image if present
+    const profileImage = files.profileImage?.[0] || null;
 
     console.log('Extracted fields:', { fullName, gender, birthdate, email }); // Debug log
 
@@ -161,8 +117,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const safeEmail = email.replace(/[^a-zA-Z0-9]/g, '_');
           const fileName = `${user.id}_${safeEmail}${fileExtension}`;
           
-          // Read file buffer for Supabase upload
-          const fileBuffer = await fs.readFile(file.filepath);
+          // Use buffer upload (temporary fix for Render compatibility)
+          const { promises: fsPromises } = await import('fs');
+          const fileBuffer = await fsPromises.readFile(file.filepath);
           
           // Determine content type based on file extension
           let contentType = 'image/jpeg';
@@ -171,14 +128,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           else if (fileExtension === '.webp') contentType = 'image/webp';
           
           // Upload to Supabase Storage
-          const uploadResult = await uploadToSupabaseStorage(
-            fileBuffer,
-            STORAGE_BUCKETS.PROFILE_IMAGES,
-            fileName,
-            contentType
-          );
-          
-          profilePicture = uploadResult.publicUrl;
+          const { data, error } = await supabase.storage
+            .from('profile-images')
+            .upload(fileName, fileBuffer, {
+              contentType,
+              upsert: true
+            });
+
+          if (error) throw error;
+
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('profile-images')
+            .getPublicUrl(fileName);
+
+          profilePicture = urlData.publicUrl;
           
           // Update user with the new profilePicture URL
           const updatedUser = await prisma.user.update({
