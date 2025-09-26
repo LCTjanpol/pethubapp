@@ -3,6 +3,7 @@ import prisma from '../../../lib/prisma';
 import { hashPassword } from '../../../lib/auth';
 import { parseForm } from '../../../utils/parseForm';
 import { supabase } from '../../../utils/supabaseClient';
+import path from 'path';
 
 
 export const config = {
