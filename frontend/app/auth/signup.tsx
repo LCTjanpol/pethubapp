@@ -112,10 +112,10 @@ export default function RegisterScreen() {
           timeout: 30000, // 30 second timeout for file uploads
         });
       } else {
-        // Handle registration without profile image
+        // Handle registration without profile image - use simple endpoint
         console.log('Sending registration request without image...');
-        console.log('Request URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER}`);
-        response = await apiClient.post(ENDPOINTS.AUTH.REGISTER, {
+        console.log('Request URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER_SIMPLE}`);
+        response = await apiClient.post(ENDPOINTS.AUTH.REGISTER_SIMPLE, {
           fullName: fullName.trim(),
           email: email.trim().toLowerCase(),
           birthdate,
