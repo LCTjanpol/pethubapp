@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import { parseForm } from '../../../utils/parseForm';
@@ -110,7 +109,7 @@ const adminHandler = async (req: AuthedRequest, res: NextApiResponse) => {
             const { promises: fsPromises } = await import('fs');
             const fileBuffer = await fsPromises.readFile(fileObj.filepath);
             
-            const { data, error } = await supabase.storage
+            const { error } = await supabase.storage
               .from('shop-images')
               .upload(fileName, fileBuffer, {
                 contentType,

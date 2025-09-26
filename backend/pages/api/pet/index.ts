@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import { parseForm } from '../../../utils/parseForm';
 import { supabase } from '../../../utils/supabaseClient';
@@ -58,7 +57,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           const { promises: fsPromises } = await import('fs');
           const fileBuffer = await fsPromises.readFile(file.filepath);
           
-          const { data, error } = await supabase.storage
+          const { error } = await supabase.storage
             .from('pet-images')
             .upload(fileName, fileBuffer, {
               contentType,
