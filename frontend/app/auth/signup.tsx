@@ -84,54 +84,30 @@ export default function RegisterScreen() {
       
       let response;
       
+      // Always use simple registration endpoint for now (FormData endpoint has issues on Render)
+      console.log('Sending registration request...');
+      console.log('Request URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER_SIMPLE}`);
+      console.log('Request data:', {
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        birthdate,
+        gender: gender.trim(),
+        password: '***hidden***'
+      });
+      
+      response = await apiClient.post(ENDPOINTS.AUTH.REGISTER_SIMPLE, {
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        birthdate,
+        gender: gender.trim(),
+        password,
+      });
+      
+      console.log('Response received:', response.status, response.data);
+      
+      // TODO: Handle profile image upload separately after user creation
       if (profileImage) {
-        // Handle registration with profile image upload
-        console.log('Creating form data for image upload...'); 
-        const formData = new FormData();
-        formData.append('fullName', fullName.trim());
-        formData.append('email', email.trim().toLowerCase());
-        formData.append('birthdate', birthdate);
-        formData.append('gender', gender.trim());
-        formData.append('password', password);
-        
-        // Append profile image with proper format
-        formData.append('profileImage', {
-          uri: profileImage,
-          type: 'image/jpeg',
-          name: 'profile.jpg',
-        } as any);
-
-        console.log('Sending registration request with image...');
-        console.log('Request URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER}`);
-        
-        // Use apiClient for FormData to handle file uploads properly
-        response = await apiClient.post(ENDPOINTS.AUTH.REGISTER, formData, {
-          headers: {
-            // Don't set Content-Type for multipart/form-data - let axios handle it
-          },
-          timeout: 30000, // 30 second timeout for file uploads
-        });
-      } else {
-        // Handle registration without profile image - use simple endpoint
-        console.log('Sending registration request without image...');
-        console.log('Request URL:', `${API_URL}${ENDPOINTS.AUTH.REGISTER_SIMPLE}`);
-        console.log('Request data:', {
-          fullName: fullName.trim(),
-          email: email.trim().toLowerCase(),
-          birthdate,
-          gender: gender.trim(),
-          password: '***hidden***'
-        });
-        
-        response = await apiClient.post(ENDPOINTS.AUTH.REGISTER_SIMPLE, {
-          fullName: fullName.trim(),
-          email: email.trim().toLowerCase(),
-          birthdate,
-          gender: gender.trim(),
-          password,
-        });
-        
-        console.log('Response received:', response.status, response.data);
+        console.log('Profile image selected but not uploaded yet - will implement separate image upload later');
       }
 
       console.log('Registration successful:', response.data);
