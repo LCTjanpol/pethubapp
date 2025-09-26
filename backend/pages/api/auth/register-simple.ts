@@ -31,6 +31,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    // Check database connection first
+    try {
+      await prisma.$connect();
+      console.log('✅ Database connected successfully');
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError);
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection failed',
+        error: dbError instanceof Error ? dbError.message : 'Unknown database error'
+      });
+    }
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -59,9 +72,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({ 
-      where: { email: email.toLowerCase() } 
-    });
+    let existingUser;
+    try {
+      existingUser = await prisma.user.findUnique({ 
+        where: { email: email.toLowerCase() } 
+      });
+      console.log('✅ User lookup completed');
+    } catch (lookupError) {
+      console.error('❌ User lookup failed:', lookupError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to check existing user',
+        error: lookupError instanceof Error ? lookupError.message : 'Unknown lookup error'
+      });
+    }
     
     if (existingUser) {
       console.log('User already exists:', email); // Debug log
@@ -72,18 +96,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Hash password and create user
-    const hashedPassword = await hashPassword(password);
-    const user = await prisma.user.create({
-      data: {
-        fullName: fullName.trim(),
-        gender: gender.trim(),
-        birthdate: birthDate,
-        email: email.toLowerCase().trim(),
-        password: hashedPassword,
-        profilePicture: null,
-      },
-    });
-    console.log('User created successfully:', user.id);
+    let hashedPassword;
+    try {
+      hashedPassword = await hashPassword(password);
+      console.log('✅ Password hashed successfully');
+    } catch (hashError) {
+      console.error('❌ Password hashing failed:', hashError);
+      return res.status(500).json({
+        success: false,
+        message: 'Password hashing failed',
+        error: hashError instanceof Error ? hashError.message : 'Unknown hashing error'
+      });
+    }
+
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          fullName: fullName.trim(),
+          gender: gender.trim(),
+          birthdate: birthDate,
+          email: email.toLowerCase().trim(),
+          password: hashedPassword,
+          profilePicture: null,
+        },
+      });
+      console.log('✅ User created successfully:', user.id);
+    } catch (createError) {
+      console.error('❌ User creation failed:', createError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create user',
+        error: createError instanceof Error ? createError.message : 'Unknown creation error'
+      });
+    }
+
+    // Disconnect from database
+    try {
+      await prisma.$disconnect();
+      console.log('✅ Database disconnected successfully');
+    } catch (disconnectError) {
+      console.error('⚠️ Database disconnect warning:', disconnectError);
+    }
 
     return res.status(201).json({
       success: true,
@@ -91,7 +145,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userId: user.id
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('❌ Registration error:', error);
+    
+    // Ensure database disconnection on error
+    try {
+      await prisma.$disconnect();
+    } catch (disconnectError) {
+      console.error('⚠️ Database disconnect error:', disconnectError);
+    }
+    
     return res.status(500).json({
       success: false,
       message: 'An error occurred during registration',
