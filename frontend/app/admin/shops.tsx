@@ -377,13 +377,46 @@ const AdminShopsScreen = () => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      const formData = new FormData();
-      formData.append('name', shopFormData.name);
-      formData.append('type', shopFormData.type);
-      formData.append('latitude', shopFormData.latitude.toString());
-      formData.append('longitude', shopFormData.longitude.toString());
-      formData.append('contactNumber', shopFormData.contactNumber);
-      
+      console.log('🏪 Creating/updating shop...');
+      console.log('Shop data:', { 
+        name: shopFormData.name, 
+        type: shopFormData.type, 
+        latitude: shopFormData.latitude, 
+        longitude: shopFormData.longitude 
+      });
+
+      let imageBase64 = null;
+
+      // Convert image to base64 if present and it's a new image
+      if (selectedImage && (!isEditing || hasNewImage)) {
+        try {
+          console.log('📸 Converting shop image to base64...');
+          const response_fetch = await fetch(selectedImage);
+          const blob = await response_fetch.blob();
+          
+          // Convert blob to base64
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve, reject) => {
+            reader.onload = () => {
+              const result = reader.result as string;
+              resolve(result);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          
+          imageBase64 = await base64Promise;
+          console.log('✅ Shop image converted to base64:', {
+            hasImage: !!imageBase64,
+            base64Length: imageBase64.length
+          });
+        } catch (imgError) {
+          console.error('❌ Error converting shop image to base64:', imgError);
+          Alert.alert('Error', 'Failed to process image. Please try again.');
+          return;
+        }
+      }
+
       // Handle working hours - use time picker if custom, otherwise use preset
       let finalWorkingHours;
       if (shopFormData.workingHours === 'Custom Hours') {
@@ -391,7 +424,6 @@ const AdminShopsScreen = () => {
       } else {
         finalWorkingHours = shopFormData.workingHours;
       }
-      formData.append('workingHours', finalWorkingHours);
       
       // Handle working days - use day selection if custom, otherwise use preset
       let finalWorkingDays;
@@ -400,44 +432,40 @@ const AdminShopsScreen = () => {
       } else {
         finalWorkingDays = shopFormData.workingDays;
       }
-      formData.append('workingDays', finalWorkingDays);
 
-      // Only append image if it's a new image (not editing existing image URL)
-      if (selectedImage && (!isEditing || hasNewImage)) {
-        formData.append('image', {
-          uri: selectedImage,
-          type: 'image/jpeg',
-          name: 'shop-image.jpg',
-        } as any);
-      }
+      const requestData = {
+        name: shopFormData.name,
+        type: shopFormData.type,
+        latitude: shopFormData.latitude.toString(),
+        longitude: shopFormData.longitude.toString(),
+        contactNumber: shopFormData.contactNumber,
+        workingHours: finalWorkingHours,
+        workingDays: finalWorkingDays,
+        imageBase64: imageBase64
+      };
 
       let response;
       if (isEditing && editingShop) {
         // Update existing shop
-        console.log('🔄 Updating shop:', editingShop.id, 'with data:', {
-          name: shopFormData.name,
-          type: shopFormData.type,
-          hasImage: !!selectedImage
-        });
-        response = await apiClient.put(ENDPOINTS.SHOP.UPDATE(editingShop.id.toString()), formData, {
+        console.log('🔄 Updating shop:', editingShop.id);
+        response = await apiClient.put('/shop/update-base64', {
+          id: editingShop.id,
+          ...requestData
+        }, {
           headers: {
             Authorization: `Bearer ${token}`,
-            // Don't set Content-Type for multipart/form-data - let axios handle it
           },
+          timeout: 90000, // 90 seconds for large base64 payloads
         });
         console.log('✅ Shop update successful:', response.status);
       } else {
         // Create new shop
-        console.log('🔄 Creating new shop with data:', {
-          name: shopFormData.name,
-          type: shopFormData.type,
-          hasImage: !!selectedImage
-        });
-        response = await apiClient.post(ENDPOINTS.SHOP.LIST, formData, {
+        console.log('🔄 Creating new shop');
+        response = await apiClient.post('/shop/create-base64', requestData, {
           headers: {
             Authorization: `Bearer ${token}`,
-            // Don't set Content-Type for multipart/form-data - let axios handle it
           },
+          timeout: 90000, // 90 seconds for large base64 payloads
         });
         console.log('✅ Shop creation successful:', response.status);
       }
@@ -463,10 +491,22 @@ const AdminShopsScreen = () => {
           ]
         );
       }
-    } catch (error) {
-      console.error('Error saving shop:', error);
+    } catch (error: any) {
+      console.error('❌ Error saving shop:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL
+        }
+      });
       const action = isEditing ? 'updating' : 'adding';
-      Alert.alert('Error', `Failed to ${action} shop. Please try again.`);
+      Alert.alert('Error', `Failed to ${action} shop: ${error?.message || 'Unknown error'}`);
     }
   };
 
