@@ -3,6 +3,7 @@ import prisma from '../../../lib/prisma';
 import { parseForm } from '../../../utils/parseForm';
 import { supabase } from '../../../utils/supabaseClient';
 import path from 'path';
+import { promises as fsPromises } from 'fs';
 
 export const config = {
   api: {
@@ -24,7 +25,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    console.log('Starting profile image upload...');
+    console.log('🖼️ Starting profile image upload...');
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
     console.log('Request headers:', req.headers);
     console.log('Content-Type:', req.headers['content-type']);
 
@@ -33,6 +36,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('✅ Form parsing successful');
     console.log('Parsed fields:', Object.keys(fields));
     console.log('Parsed files:', Object.keys(files));
+    console.log('Fields content:', fields);
+    console.log('Files content:', Object.keys(files).map(key => ({
+      key,
+      filename: files[key]?.[0]?.originalFilename,
+      size: files[key]?.[0]?.size
+    })));
 
     // Extract user ID and image
     const userId = Array.isArray(fields.userId) ? fields.userId[0] : fields.userId;
@@ -93,7 +102,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const fileName = `${user.id}_${safeEmail}${fileExtension}`;
         
         // Use buffer upload for Render compatibility
-        const { promises: fsPromises } = await import('fs');
         const fileBuffer = await fsPromises.readFile(file.filepath);
         
         // Determine content type based on file extension
