@@ -10,7 +10,7 @@ export const config = {
     bodyParser: false, // Disable the default body parser
     responseLimit: '10mb', // Increase response limit
   },
-  maxDuration: 30, // Set max duration for Render
+  maxDuration: 60, // Increase max duration for Render
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -32,19 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Request URL:', req.url);
     console.log('Content-Type:', req.headers['content-type']);
 
-    // Add timeout wrapper for Render compatibility
-    const parseWithTimeout = () => {
-      return Promise.race([
-        parseForm(req),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('FormData parsing timeout')), 25000)
-        )
-      ]);
-    };
-
-    // Parse multipart/form-data using utility with timeout
+    // Parse multipart/form-data using utility
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { fields, files } = await parseWithTimeout() as { fields: Record<string, string[]>, files: Record<string, any[]> };
+    const { fields, files } = await parseForm(req) as { fields: Record<string, string[]>, files: Record<string, any[]> };
     console.log('✅ Form parsing successful');
     console.log('Parsed fields:', Object.keys(fields));
     console.log('Parsed files:', Object.keys(files));

@@ -5,12 +5,28 @@ export const parseForm = (req) =>
     const form = formidable({ 
       keepExtensions: true, 
       multiples: false,
-      maxFileSize: 10 * 1024 * 1024 // 10MB limit
+      maxFileSize: 10 * 1024 * 1024, // 10MB limit
+      maxFields: 10, // Limit number of fields
+      maxFieldsSize: 1024 * 1024 // 1MB for fields
     });
-    form.on("error", (err) => reject(err));
+    
+    // Set timeout for form parsing
+    const timeout = setTimeout(() => {
+      reject(new Error('Form parsing timeout'));
+    }, 45000); // 45 second timeout
+    
+    form.on("error", (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+    
     form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
+      clearTimeout(timeout);
+      if (err) {
+        reject(err);
+      } else {
+        resolve({ fields, files });
+      }
     });
   });
 
