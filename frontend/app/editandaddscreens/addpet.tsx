@@ -36,27 +36,60 @@ const AddPetScreen = () => {
         Alert.alert('Error', 'No token found. Please log in again.');
         return;
       }
-      const formData = new FormData();
-      formData.append('name', newPet.name);
-      formData.append('age', newPet.age);
-      formData.append('type', newPet.type);
-      formData.append('breed', newPet.breed);
+
+      console.log('🐾 Creating pet...');
+      console.log('Pet data:', { name: newPet.name, age: newPet.age, type: newPet.type, breed: newPet.breed });
+
+      let imageBase64 = null;
+
+      // Convert image to base64 if present
       if (image) {
-        formData.append('petPicture', {
-          uri: image.uri,
-          type: 'image/jpeg',
-          name: image.fileName || 'pet.jpg',
-        } as any);
+        try {
+          console.log('📸 Converting image to base64...');
+          const response_fetch = await fetch(image.uri);
+          const blob = await response_fetch.blob();
+          
+          // Convert blob to base64
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve, reject) => {
+            reader.onload = () => {
+              const result = reader.result as string;
+              resolve(result);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          
+          imageBase64 = await base64Promise;
+          console.log('✅ Image converted to base64:', {
+            hasImage: !!imageBase64,
+            base64Length: imageBase64.length
+          });
+        } catch (imgError) {
+          console.error('❌ Error converting image to base64:', imgError);
+          Alert.alert('Error', 'Failed to process image. Please try again.');
+          return;
+        }
       }
-      await apiClient.post(ENDPOINTS.PET.LIST, formData, {
+
+      const response = await apiClient.post('/pet/create-base64', {
+        name: newPet.name,
+        age: newPet.age,
+        type: newPet.type,
+        breed: newPet.breed,
+        imageBase64: imageBase64
+      }, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        timeout: 90000, // 90 seconds for large base64 payloads
       });
-      Alert.alert('Success', 'Pet added!');
+
+      console.log('✅ Pet created successfully:', response.data);
+      Alert.alert('Success', 'Pet added successfully!');
       navigation.goBack();
     } catch (error: any) {
-      console.error('Pet creation error:', error);
+      console.error('❌ Pet creation error:', error);
       console.error('Error details:', {
         message: error.message,
         code: error.code,
