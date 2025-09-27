@@ -43,7 +43,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     // Parse multipart/form-data using utility with timeout
-    const { fields, files } = await parseWithTimeout() as { fields: Record<string, string[]>, files: Record<string, File[]> };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { fields, files } = await parseWithTimeout() as { fields: Record<string, string[]>, files: Record<string, any[]> };
     console.log('✅ Form parsing successful');
     console.log('Parsed fields:', Object.keys(fields));
     console.log('Parsed files:', Object.keys(files));
