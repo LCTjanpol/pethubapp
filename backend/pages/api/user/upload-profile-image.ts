@@ -8,7 +8,9 @@ import { promises as fsPromises } from 'fs';
 export const config = {
   api: {
     bodyParser: false, // Disable the default body parser
+    responseLimit: '10mb', // Increase response limit
   },
+  maxDuration: 30, // Set max duration for Render
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -28,11 +30,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('🖼️ Starting profile image upload...');
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
-    console.log('Request headers:', req.headers);
     console.log('Content-Type:', req.headers['content-type']);
 
-    // Parse multipart/form-data using utility
-    const { fields, files } = await parseForm(req);
+    // Add timeout wrapper for Render compatibility
+    const parseWithTimeout = () => {
+      return Promise.race([
+        parseForm(req),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('FormData parsing timeout')), 25000)
+        )
+      ]);
+    };
+
+    // Parse multipart/form-data using utility with timeout
+    const { fields, files } = await parseWithTimeout() as { fields: any, files: any };
     console.log('✅ Form parsing successful');
     console.log('Parsed fields:', Object.keys(fields));
     console.log('Parsed files:', Object.keys(files));
