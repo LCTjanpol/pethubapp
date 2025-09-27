@@ -31,8 +31,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
     console.log('Content-Type:', req.headers['content-type']);
+    console.log('Request headers:', JSON.stringify(req.headers, null, 2));
 
     // Parse multipart/form-data using utility
+    console.log('🔄 Starting FormData parsing...');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { fields, files } = await parseForm(req) as { fields: Record<string, string[]>, files: Record<string, any[]> };
     console.log('✅ Form parsing successful');

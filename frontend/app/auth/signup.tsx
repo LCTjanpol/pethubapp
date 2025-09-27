@@ -111,19 +111,38 @@ export default function RegisterScreen() {
         try {
           const formData = new FormData();
           formData.append('userId', response.data.userId.toString());
-          formData.append('profileImage', {
+          
+          // Create proper FormData file object for React Native
+          const imageFile = {
             uri: profileImage,
             type: 'image/jpeg',
             name: 'profile.jpg',
-          } as any);
+          };
+          
+          formData.append('profileImage', imageFile as any);
+          
+          console.log('FormData created:', {
+            userId: response.data.userId.toString(),
+            hasImage: !!imageFile.uri,
+            imageType: imageFile.type,
+            imageName: imageFile.name
+          });
 
           const imageResponse = await apiClient.post('/user/upload-profile-image', formData, {
-            timeout: 30000,
+            timeout: 90000, // Increase timeout to 90 seconds
           });
           
           console.log('Profile image uploaded successfully:', imageResponse.data);
         } catch (imageError) {
           console.error('Profile image upload failed:', imageError);
+          console.error('Upload error details:', {
+            message: imageError.message,
+            code: imageError.code,
+            status: imageError.response?.status,
+            statusText: imageError.response?.statusText,
+            data: imageError.response?.data,
+            config: imageError.config
+          });
           // Don't fail registration if image upload fails
           console.log('Continuing with registration - image upload failed but user created');
         }
