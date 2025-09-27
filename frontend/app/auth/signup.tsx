@@ -109,26 +109,33 @@ export default function RegisterScreen() {
       if (profileImage && response.data?.userId) {
         console.log('Uploading profile image...');
         try {
-          const formData = new FormData();
-          formData.append('userId', response.data.userId.toString());
+          // Convert image to base64
+          const response_fetch = await fetch(profileImage);
+          const blob = await response_fetch.blob();
           
-          // Create proper FormData file object for React Native
-          const imageFile = {
-            uri: profileImage,
-            type: 'image/jpeg',
-            name: 'profile.jpg',
-          };
+          // Convert blob to base64
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve, reject) => {
+            reader.onload = () => {
+              const result = reader.result as string;
+              resolve(result);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
           
-          formData.append('profileImage', imageFile as any);
+          const imageBase64 = await base64Promise;
           
-          console.log('FormData created:', {
+          console.log('Base64 image created:', {
             userId: response.data.userId.toString(),
-            hasImage: !!imageFile.uri,
-            imageType: imageFile.type,
-            imageName: imageFile.name
+            hasImage: !!imageBase64,
+            base64Length: imageBase64.length
           });
 
-          const imageResponse = await apiClient.post('/user/upload-profile-image', formData, {
+          const imageResponse = await apiClient.post('/user/upload-profile-image-base64', {
+            userId: response.data.userId.toString(),
+            imageBase64: imageBase64
+          }, {
             timeout: 90000, // Increase timeout to 90 seconds
           });
           
