@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
-      const userId = decoded.userId;
+      // Note: userId is available for future use (e.g., tracking who liked the post)
 
       // Get the likes increment/decrement from request body
       const { likes } = req.body;
