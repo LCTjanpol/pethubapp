@@ -245,23 +245,44 @@ const Home = () => {
         return;
       }
 
-      const formData = new FormData();
-      formData.append('image', {
-        uri: selectedImage,
-        type: 'image/jpeg',
-        name: 'post.jpg',
-      } as any);
-      
-      if (postCaption.trim()) {
-        formData.append('caption', postCaption.trim());
-      }
+      console.log('📝 Creating post...');
+      console.log('Selected image:', selectedImage);
+      console.log('Caption:', postCaption);
 
-      await apiClient.post(ENDPOINTS.POST.LIST, formData, {
+      // Convert image to base64
+      const response_fetch = await fetch(selectedImage);
+      const blob = await response_fetch.blob();
+      
+      // Convert blob to base64
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      
+      const imageBase64 = await base64Promise;
+      
+      console.log('Base64 image created:', {
+        hasImage: !!imageBase64,
+        base64Length: imageBase64.length,
+        caption: postCaption.trim()
+      });
+
+      const response = await apiClient.post('/post/create-base64', {
+        imageBase64: imageBase64,
+        caption: postCaption.trim()
+      }, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        timeout: 90000, // 90 seconds for large base64 payloads
       });
 
+      console.log('Post created successfully:', response.data);
       Alert.alert('Success', 'Your post has been shared!');
       setShowPostModal(false);
       setSelectedImage(null);
@@ -269,6 +290,14 @@ const Home = () => {
       fetchPosts(token);
     } catch (error: any) {
       console.error('Post submission error:', error);
+      console.error('Post error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: error.config
+      });
       Alert.alert('Error', 'Failed to share post.');
     } finally {
       setIsPosting(false);
