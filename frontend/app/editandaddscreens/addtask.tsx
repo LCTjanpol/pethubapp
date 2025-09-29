@@ -221,15 +221,19 @@ const AddTaskScreen = () => {
 
   // Helper function to toggle day selection
   const toggleDaySelection = (day: keyof typeof selectedDays) => {
+    console.log('🔄 Toggling day:', day);
     setSelectedDays(prev => {
       const newDays = {
         ...prev,
         [day]: !prev[day]
       };
       
+      console.log('📅 New days state:', newDays);
+      
       // Check if all days are selected
       const allSelected = Object.values(newDays).every(selected => selected);
       if (allSelected) {
+        console.log('✅ All days selected, setting to daily');
         setTaskFrequency('daily');
       }
       
@@ -718,24 +722,31 @@ const AddTaskScreen = () => {
       {taskFrequency === 'weekly' && (
         <View style={styles.daySelectionContainer}>
           <Text style={styles.daySelectionLabel}>Select Days:</Text>
+          <Text style={styles.debugText}>Debug: {JSON.stringify(selectedDays)}</Text>
           <View style={styles.daysGrid}>
-            {Object.entries(selectedDays).map(([day, selected]) => (
-              <TouchableOpacity
-                key={day}
-                style={[
-                  styles.dayOption,
-                  selected && styles.dayOptionSelected
-                ]}
-                onPress={() => toggleDaySelection(day as keyof typeof selectedDays)}
-              >
-                <Text style={[
-                  styles.dayOptionText,
-                  selected && styles.dayOptionTextSelected
-                ]}>
-                  {day.charAt(0).toUpperCase() + day.slice(1, 3)}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {Object.entries(selectedDays).map(([day, selected]) => {
+              console.log('🎯 Rendering day:', day, 'selected:', selected);
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[
+                    styles.dayOption,
+                    selected && styles.dayOptionSelected
+                  ]}
+                  onPress={() => {
+                    console.log('👆 Pressed day:', day);
+                    toggleDaySelection(day as keyof typeof selectedDays);
+                  }}
+                >
+                  <Text style={[
+                    styles.dayOptionText,
+                    selected && styles.dayOptionTextSelected
+                  ]}>
+                    {day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
           <Text style={styles.selectedDaysText}>
             {getDaysString(selectedDays)}
@@ -1318,6 +1329,12 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  debugText: {
+    fontSize: 10,
+    color: '#999',
+    fontStyle: 'italic',
+    marginBottom: 8,
   },
 });
 
