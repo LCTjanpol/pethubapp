@@ -40,6 +40,7 @@ const AddTaskScreen = () => {
   
   // State for weekly task days selection
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [taskFrequency, setTaskFrequency] = useState('daily');
 
   // State for edit functionality
   const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
@@ -191,6 +192,7 @@ const AddTaskScreen = () => {
   const clearFormData = () => {
     setNewScheduledTask({ taskName: '', date: '' });
     setSelectedDays([]);
+    setTaskFrequency('daily');
   };
 
   // Helper function to toggle day selection
@@ -202,7 +204,7 @@ const AddTaskScreen = () => {
       
       // If all days are selected, automatically set frequency to daily
       if (newDays.length === 7) {
-        setEditTaskFrequency('daily');
+        setTaskFrequency('daily');
       }
       
       return newDays;
@@ -249,13 +251,13 @@ const AddTaskScreen = () => {
     }
     
     // For weekly tasks, check if days are selected
-    if (editTaskFrequency === 'weekly' && selectedDays.length === 0) {
+    if (taskFrequency === 'weekly' && selectedDays.length === 0) {
       Alert.alert('Error', 'Please select at least one day for weekly tasks');
       return;
     }
     
     // For scheduled tasks, check if date is provided
-    if (editTaskFrequency === 'scheduled' && !newScheduledTask.date) {
+    if (taskFrequency === 'scheduled' && !newScheduledTask.date) {
       Alert.alert('Error', 'Date is required for scheduled tasks');
       return;
     }
@@ -266,7 +268,7 @@ const AddTaskScreen = () => {
       const taskData = {
         type: 'Minor',
         description: newScheduledTask.taskName,
-        time: editTaskFrequency === 'scheduled' ? new Date(newScheduledTask.date).toISOString() : new Date().toISOString(),
+        time: taskFrequency === 'scheduled' ? new Date(newScheduledTask.date).toISOString() : new Date().toISOString(),
         petId,
         frequency: frequency,
         selectedDays: frequency === 'weekly' ? selectedDays.join(',') : null,
@@ -285,7 +287,6 @@ const AddTaskScreen = () => {
       }]);
       
       clearFormData();
-      setEditTaskFrequency('daily');
       Alert.alert('Success', 'Task added successfully!');
     } catch (error: any) {
       Alert.alert('Error', 'Failed to add task: ' + (error?.message || 'Unknown error'));
@@ -477,6 +478,7 @@ const AddTaskScreen = () => {
     setEditSelectedDays([]);
     setSelectedDays([]);
     setEditTaskFrequency('daily');
+    setTaskFrequency('daily');
   };
 
   const handleDeleteScheduledTask = async (taskId: number) => {
@@ -606,13 +608,13 @@ const AddTaskScreen = () => {
             key={freq}
             style={[
               styles.frequencyOption,
-              editTaskFrequency === freq && styles.frequencyOptionSelected
+              taskFrequency === freq && styles.frequencyOptionSelected
             ]}
-            onPress={() => setEditTaskFrequency(freq)}
+            onPress={() => setTaskFrequency(freq)}
           >
             <Text style={[
               styles.frequencyOptionText,
-              editTaskFrequency === freq && styles.frequencyOptionTextSelected
+              taskFrequency === freq && styles.frequencyOptionTextSelected
             ]}>
               {freq.charAt(0).toUpperCase() + freq.slice(1)}
             </Text>
@@ -621,7 +623,7 @@ const AddTaskScreen = () => {
       </View>
 
       {/* Date Selection for Scheduled Tasks */}
-      {editTaskFrequency === 'scheduled' && (
+      {taskFrequency === 'scheduled' && (
         <TouchableOpacity
           style={styles.dateInput}
           onPress={() => setDatePickerVisibility(true)}
@@ -633,7 +635,7 @@ const AddTaskScreen = () => {
       )}
 
       {/* Day Selection for Weekly Tasks */}
-      {editTaskFrequency === 'weekly' && (
+      {taskFrequency === 'weekly' && (
         <View style={styles.daySelectionContainer}>
           <Text style={styles.daySelectionLabel}>Select Days:</Text>
           <View style={styles.daysGrid}>
