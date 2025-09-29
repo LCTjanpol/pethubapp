@@ -243,15 +243,19 @@ const AddTaskScreen = () => {
 
   // Helper function to toggle edit day selection
   const toggleEditDaySelection = (day: keyof typeof editSelectedDays) => {
+    console.log('🔄 Edit Toggling day:', day);
     setEditSelectedDays(prev => {
       const newDays = {
         ...prev,
         [day]: !prev[day]
       };
       
+      console.log('📅 Edit New days state:', newDays);
+      
       // Check if all days are selected
       const allSelected = Object.values(newDays).every(selected => selected);
       if (allSelected) {
+        console.log('✅ Edit All days selected, setting to daily');
         setEditTaskFrequency('daily');
       }
       
@@ -735,6 +739,7 @@ const AddTaskScreen = () => {
                   ]}
                   onPress={() => {
                     console.log('👆 Pressed day:', day);
+                    console.log('👆 Current selectedDays:', selectedDays);
                     toggleDaySelection(day as keyof typeof selectedDays);
                   }}
                 >
@@ -846,24 +851,32 @@ const AddTaskScreen = () => {
             {editTaskFrequency === 'weekly' && (
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Select Days</Text>
+                <Text style={styles.debugText}>Edit Debug: {JSON.stringify(editSelectedDays)}</Text>
                 <View style={styles.daysGrid}>
-                  {Object.entries(editSelectedDays).map(([day, selected]) => (
-                    <TouchableOpacity
-                      key={day}
-                      style={[
-                        styles.dayOption,
-                        selected && styles.dayOptionSelected
-                      ]}
-                      onPress={() => toggleEditDaySelection(day as keyof typeof editSelectedDays)}
-                    >
-                      <Text style={[
-                        styles.dayOptionText,
-                        selected && styles.dayOptionTextSelected
-                      ]}>
-                        {day.charAt(0).toUpperCase() + day.slice(1, 3)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                  {Object.entries(editSelectedDays).map(([day, selected]) => {
+                    console.log('🎯 Edit Rendering day:', day, 'selected:', selected);
+                    return (
+                      <TouchableOpacity
+                        key={day}
+                        style={[
+                          styles.dayOption,
+                          selected && styles.dayOptionSelected
+                        ]}
+                        onPress={() => {
+                          console.log('👆 Edit Pressed day:', day);
+                          console.log('👆 Edit Current editSelectedDays:', editSelectedDays);
+                          toggleEditDaySelection(day as keyof typeof editSelectedDays);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dayOptionText,
+                          selected && styles.dayOptionTextSelected
+                        ]}>
+                          {day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
                 <Text style={styles.selectedDaysText}>
                   {getDaysString(editSelectedDays)}
