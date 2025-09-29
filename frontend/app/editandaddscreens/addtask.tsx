@@ -1285,9 +1285,9 @@ const styles = StyleSheet.create({
   },
   frequencyOption: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
   },
@@ -1295,8 +1295,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#007bff',
   },
   frequencyOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#333',
   },
   frequencyOptionTextSelected: {
