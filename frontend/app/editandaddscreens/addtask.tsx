@@ -39,7 +39,15 @@ const AddTaskScreen = () => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   
   // State for weekly task days selection
-  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [selectedDays, setSelectedDays] = useState({
+    monday: false,
+    tuesday: false,
+    wednesday: false,
+    thursday: false,
+    friday: false,
+    saturday: false,
+    sunday: false,
+  });
   const [taskFrequency, setTaskFrequency] = useState('daily');
 
   // State for edit functionality
@@ -50,7 +58,15 @@ const AddTaskScreen = () => {
   const [editTaskDate, setEditTaskDate] = useState('');
   const [editTaskTime, setEditTaskTime] = useState('');
   const [editTaskFrequency, setEditTaskFrequency] = useState('daily');
-  const [editSelectedDays, setEditSelectedDays] = useState<string[]>([]);
+  const [editSelectedDays, setEditSelectedDays] = useState({
+    monday: false,
+    tuesday: false,
+    wednesday: false,
+    thursday: false,
+    friday: false,
+    saturday: false,
+    sunday: false,
+  });
   const [isEditDatePickerVisible, setEditDatePickerVisibility] = useState(false);
   const [isEditTimePickerVisible, setEditTimePickerVisibility] = useState(false);
   const [isEditModalVisible, setEditModalVisibility] = useState(false);
@@ -191,19 +207,29 @@ const AddTaskScreen = () => {
 
   const clearFormData = () => {
     setNewScheduledTask({ taskName: '', date: '' });
-    setSelectedDays([]);
+    setSelectedDays({
+      monday: false,
+      tuesday: false,
+      wednesday: false,
+      thursday: false,
+      friday: false,
+      saturday: false,
+      sunday: false,
+    });
     setTaskFrequency('daily');
   };
 
   // Helper function to toggle day selection
-  const toggleDaySelection = (day: string) => {
+  const toggleDaySelection = (day: keyof typeof selectedDays) => {
     setSelectedDays(prev => {
-      const newDays = prev.includes(day) 
-        ? prev.filter(d => d !== day)
-        : [...prev, day];
+      const newDays = {
+        ...prev,
+        [day]: !prev[day]
+      };
       
-      // If all days are selected, automatically set frequency to daily
-      if (newDays.length === 7) {
+      // Check if all days are selected
+      const allSelected = Object.values(newDays).every(selected => selected);
+      if (allSelected) {
         setTaskFrequency('daily');
       }
       
@@ -212,14 +238,16 @@ const AddTaskScreen = () => {
   };
 
   // Helper function to toggle edit day selection
-  const toggleEditDaySelection = (day: string) => {
+  const toggleEditDaySelection = (day: keyof typeof editSelectedDays) => {
     setEditSelectedDays(prev => {
-      const newDays = prev.includes(day) 
-        ? prev.filter(d => d !== day)
-        : [...prev, day];
+      const newDays = {
+        ...prev,
+        [day]: !prev[day]
+      };
       
-      // If all days are selected, automatically set frequency to daily
-      if (newDays.length === 7) {
+      // Check if all days are selected
+      const allSelected = Object.values(newDays).every(selected => selected);
+      if (allSelected) {
         setEditTaskFrequency('daily');
       }
       
@@ -228,20 +256,30 @@ const AddTaskScreen = () => {
   };
 
   // Helper function to get frequency based on selected days
-  const getFrequencyFromDays = (days: string[]) => {
-    return days.length === 7 ? 'daily' : 'weekly';
+  const getFrequencyFromDays = (days: typeof selectedDays) => {
+    const selectedCount = Object.values(days).filter(selected => selected).length;
+    return selectedCount === 7 ? 'daily' : 'weekly';
   };
 
   // Helper function to get days string for display
-  const getDaysString = (days: string[]) => {
-    if (days.length === 0) return 'No days selected';
-    if (days.length === 7) return 'Daily';
-    if (days.length === 1) return daysOfWeek.find(d => d.key === days[0])?.label || days[0];
-    if (days.length === 2) {
-      const dayLabels = days.map(day => daysOfWeek.find(d => d.key === day)?.label || day);
+  const getDaysString = (days: typeof selectedDays) => {
+    const selectedDaysList = Object.entries(days)
+      .filter(([_, selected]) => selected)
+      .map(([day, _]) => day);
+    
+    if (selectedDaysList.length === 0) return 'No days selected';
+    if (selectedDaysList.length === 7) return 'Daily';
+    if (selectedDaysList.length === 1) {
+      const dayName = daysOfWeek.find(d => d.key === selectedDaysList[0])?.label || selectedDaysList[0];
+      return dayName;
+    }
+    if (selectedDaysList.length === 2) {
+      const dayLabels = selectedDaysList.map(day => 
+        daysOfWeek.find(d => d.key === day)?.label || day
+      );
       return dayLabels.join(', ');
     }
-    return `${days.length} days selected`;
+    return `${selectedDaysList.length} days selected`;
   };
 
   const handleAddScheduledTask = async () => {
@@ -251,7 +289,8 @@ const AddTaskScreen = () => {
     }
     
     // For weekly tasks, check if days are selected
-    if (taskFrequency === 'weekly' && selectedDays.length === 0) {
+    const selectedCount = Object.values(selectedDays).filter(selected => selected).length;
+    if (taskFrequency === 'weekly' && selectedCount === 0) {
       Alert.alert('Error', 'Please select at least one day for weekly tasks');
       return;
     }
@@ -265,13 +304,17 @@ const AddTaskScreen = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       const frequency = getFrequencyFromDays(selectedDays);
+      const selectedDaysList = Object.entries(selectedDays)
+        .filter(([_, selected]) => selected)
+        .map(([day, _]) => day);
+      
       const taskData = {
         type: 'Minor',
         description: newScheduledTask.taskName,
         time: taskFrequency === 'scheduled' ? new Date(newScheduledTask.date).toISOString() : new Date().toISOString(),
         petId,
         frequency: frequency,
-        selectedDays: frequency === 'weekly' ? selectedDays.join(',') : null,
+        selectedDays: frequency === 'weekly' ? selectedDaysList.join(',') : null,
       };
       
       const response = await apiClient.post(ENDPOINTS.TASK.LIST, taskData, {
@@ -346,7 +389,15 @@ const AddTaskScreen = () => {
     setEditTaskDescription(task.description);
     setEditTaskDate(new Date(task.time).toISOString().split('T')[0]);
     setEditTaskFrequency('scheduled');
-    setEditSelectedDays([]);
+    setEditSelectedDays({
+      monday: false,
+      tuesday: false,
+      wednesday: false,
+      thursday: false,
+      friday: false,
+      saturday: false,
+      sunday: false,
+    });
     setEditModalVisibility(true);
   };
 
@@ -415,7 +466,8 @@ const AddTaskScreen = () => {
     }
 
     // For weekly tasks, check if days are selected
-    if (editTaskFrequency === 'weekly' && editSelectedDays.length === 0) {
+    const editSelectedCount = Object.values(editSelectedDays).filter(selected => selected).length;
+    if (editTaskFrequency === 'weekly' && editSelectedCount === 0) {
       Alert.alert('Error', 'Please select at least one day for weekly tasks');
       return;
     }
@@ -429,13 +481,17 @@ const AddTaskScreen = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       const frequency = getFrequencyFromDays(editSelectedDays);
+      const editSelectedDaysList = Object.entries(editSelectedDays)
+        .filter(([_, selected]) => selected)
+        .map(([day, _]) => day);
+      
       const taskData = {
         type: 'Minor',
         description: editTaskName,
         time: editTaskFrequency === 'scheduled' ? new Date(editTaskDate).toISOString() : new Date().toISOString(),
         petId,
         frequency: frequency,
-        selectedDays: frequency === 'weekly' ? editSelectedDays.join(',') : null,
+        selectedDays: frequency === 'weekly' ? editSelectedDaysList.join(',') : null,
       };
 
       await apiClient.put(ENDPOINTS.TASK.UPDATE(editingTask.id.toString()), taskData, {
@@ -457,7 +513,15 @@ const AddTaskScreen = () => {
       setEditTaskName('');
       setEditTaskDescription('');
       setEditTaskDate('');
-      setEditSelectedDays([]);
+      setEditSelectedDays({
+        monday: false,
+        tuesday: false,
+        wednesday: false,
+        thursday: false,
+        friday: false,
+        saturday: false,
+        sunday: false,
+      });
       setEditTaskFrequency('daily');
       Alert.alert('Success', 'Task updated successfully!');
     } catch (error: any) {
@@ -475,8 +539,24 @@ const AddTaskScreen = () => {
     setEditTaskDescription('');
     setEditTaskDate('');
     setEditTaskTime('');
-    setEditSelectedDays([]);
-    setSelectedDays([]);
+    setEditSelectedDays({
+      monday: false,
+      tuesday: false,
+      wednesday: false,
+      thursday: false,
+      friday: false,
+      saturday: false,
+      sunday: false,
+    });
+    setSelectedDays({
+      monday: false,
+      tuesday: false,
+      wednesday: false,
+      thursday: false,
+      friday: false,
+      saturday: false,
+      sunday: false,
+    });
     setEditTaskFrequency('daily');
     setTaskFrequency('daily');
   };
@@ -639,20 +719,20 @@ const AddTaskScreen = () => {
         <View style={styles.daySelectionContainer}>
           <Text style={styles.daySelectionLabel}>Select Days:</Text>
           <View style={styles.daysGrid}>
-            {daysOfWeek.map((day) => (
+            {Object.entries(selectedDays).map(([day, selected]) => (
               <TouchableOpacity
-                key={day.key}
+                key={day}
                 style={[
                   styles.dayOption,
-                  selectedDays.includes(day.key) && styles.dayOptionSelected
+                  selected && styles.dayOptionSelected
                 ]}
-                onPress={() => toggleDaySelection(day.key)}
+                onPress={() => toggleDaySelection(day as keyof typeof selectedDays)}
               >
                 <Text style={[
                   styles.dayOptionText,
-                  selectedDays.includes(day.key) && styles.dayOptionTextSelected
+                  selected && styles.dayOptionTextSelected
                 ]}>
-                  {day.label.substring(0, 3)}
+                  {day.charAt(0).toUpperCase() + day.slice(1, 3)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -756,20 +836,20 @@ const AddTaskScreen = () => {
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Select Days</Text>
                 <View style={styles.daysGrid}>
-                  {daysOfWeek.map((day) => (
+                  {Object.entries(editSelectedDays).map(([day, selected]) => (
                     <TouchableOpacity
-                      key={day.key}
+                      key={day}
                       style={[
                         styles.dayOption,
-                        editSelectedDays.includes(day.key) && styles.dayOptionSelected
+                        selected && styles.dayOptionSelected
                       ]}
-                      onPress={() => toggleEditDaySelection(day.key)}
+                      onPress={() => toggleEditDaySelection(day as keyof typeof editSelectedDays)}
                     >
                       <Text style={[
                         styles.dayOptionText,
-                        editSelectedDays.includes(day.key) && styles.dayOptionTextSelected
+                        selected && styles.dayOptionTextSelected
                       ]}>
-                        {day.label.substring(0, 3)}
+                        {day.charAt(0).toUpperCase() + day.slice(1, 3)}
                       </Text>
                     </TouchableOpacity>
                   ))}
