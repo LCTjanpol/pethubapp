@@ -21,32 +21,28 @@ PetHub is a comprehensive pet care management application built with React Nativ
 - **User Management**: View and manage user accounts
 - **Content Moderation**: Monitor and manage posts and user-generated content
 
-## 🎨 Design Philosophy
-
-- **Clean & Modern UI**: White (#FFFFFF) and dark gray (#202021) color scheme
-- **User-Friendly**: Designed for all ages, including older, non-tech-savvy users
-- **Simple Navigation**: Essential buttons only with clear, intuitive interfaces
-- **Professional Appearance**: Modern typography and consistent spacing
-
 ## 🏗️ Technology Stack
 
-### Frontend (React Native + Expo)
-- **Framework**: Expo Router with React Native
-- **Navigation**: React Navigation with bottom tabs
-- **State Management**: React Hooks (useState, useEffect, useContext)
-- **UI Components**: Custom components with consistent styling
-- **Maps**: React Native Maps for shop locations with reverse geocoding
-- **Charts**: React Native Chart Kit for analytics
-- **Image Handling**: Expo Image Picker for photos
-- **Storage**: AsyncStorage for local data persistence
+### Frontend
+- **React Native** with **Expo** framework
+- **Expo Router** for navigation
+- **React Navigation** with bottom tabs
+- **React Native Maps** for shop locations
+- **Expo Image Picker** for photo handling
+- **AsyncStorage** for local data persistence
+- **Axios** for API communication
 
-### Backend (Next.js + Prisma + Supabase)
-- **Framework**: Next.js API routes
-- **Database**: Supabase (PostgreSQL)
-- **ORM**: Prisma for type-safe database queries
-- **Authentication**: JWT tokens with middleware
-- **File Upload**: Formidable for image handling
-- **Deployment**: Vercel-ready configuration
+### Backend
+- **Next.js** API routes
+- **Prisma** ORM for database operations
+- **JWT** authentication
+- **Formidable** for file uploads
+- **Render** deployment platform
+
+### Database
+- **Supabase** (PostgreSQL)
+- **Prisma** for type-safe database queries
+- **Supabase Storage** for file management
 
 ## 📱 App Structure
 
@@ -60,138 +56,104 @@ Login/Signup → Home (Social Feed) → Pets → Maps → Notifications → Prof
 Login → Admin Dashboard → Shop Management → User Management → Analytics
 ```
 
-## 🚀 Getting Started
+## 📱 Frontend Installation & Usage
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- PostgreSQL database
-- Expo CLI
-- iOS Simulator or Android Emulator (or physical device)
+- **Node.js** (v16 or higher)
+- **Expo CLI** (`npm install -g @expo/cli`)
+- **Expo Go app** on your mobile device (download from App Store/Google Play)
+- **Git** for cloning the repository
 
-### Backend Setup
+### Installation Steps
 
-1. **Navigate to backend directory**
+1. **Clone the repository**
    ```bash
-   cd backend
+   git clone https://github.com/LCTjanpol/pethubapp.git
+   cd pethubapp
    ```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   Create a `.env` file with:
-   ```env
-   DATABASE_URL="postgresql://username:password@localhost:5432/pethub_db"
-   JWT_SECRET="your-super-secret-jwt-key"
-   NODE_ENV="development"
-   ```
-
-4. **Set up database**
-   ```bash
-   npx prisma migrate dev
-   npx prisma generate
-   ```
-
-5. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-### Frontend Setup
-
-1. **Navigate to frontend directory**
+2. **Navigate to frontend directory**
    ```bash
    cd frontend
    ```
 
-2. **Install dependencies**
+3. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Update API configuration**
-   Edit `config/api.ts` and update the `API_URL` to match your backend server address.
-
-4. **Start Expo development server**
+4. **Start the development server**
    ```bash
    npm start
    ```
 
-5. **Run on device/simulator**
-   - Press `i` for iOS simulator
-   - Press `a` for Android emulator
-   - Scan QR code with Expo Go app on physical device
+5. **Run the app on your device**
+   - **Option 1: Expo Go App (Recommended)**
+     - Install "Expo Go" from App Store (iOS) or Google Play Store (Android)
+     - Scan the QR code displayed in your terminal with the Expo Go app
+     - The app will load on your device
+   
+   - **Option 2: iOS Simulator (Mac only)**
+     - Press `i` in the terminal to open iOS Simulator
+   
+   - **Option 3: Android Emulator**
+     - Press `a` in the terminal to open Android Emulator
 
-## 🔧 API Endpoints
+### Development Commands
 
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
+```bash
+# Start development server
+npm start
 
-### Posts & Social
-- `GET /api/post` - Fetch all posts with comments
-- `POST /api/post` - Create new post with image and caption
-- `POST /api/comment` - Add comment to post
-- `POST /api/reply` - Reply to comment
+# Start with tunnel (for external access)
+npm run start:tunnel
 
-### Pet Management
-- `GET /api/pet` - Fetch user's pets
-- `POST /api/pet` - Create new pet profile
-- `PUT /api/pet/:id` - Update pet information
-- `DELETE /api/pet/:id` - Delete pet
+# Clear cache and restart
+npm run clear
 
-### Tasks & Medical
-- `GET /api/task` - Fetch pet tasks
-- `POST /api/task` - Create custom task
-- `GET /api/vaccination` - Fetch medical records
-- `POST /api/vaccination` - Add medical record
+# Build for production (requires EAS CLI)
+npx eas build --platform android
+npx eas build --platform ios
+```
 
-### Shop Locations
-- `GET /api/shop` - Fetch all shops
-- `POST /api/shop` - Add new shop (admin only)
+### Local Development Setup
 
-### Admin
-- `GET /api/admin/users` - Fetch all users
-- `GET /api/admin/pets` - Fetch all pets
-- `GET /api/admin/stats` - Get analytics data
+The frontend is configured to work with the backend deployed on Render. The API endpoints are automatically configured to connect to the production backend.
 
-## 🔒 Security Features
+**Configuration Files:**
+- `config/api.ts` - API client configuration
+- `config/environment.ts` - Environment settings
+- `app.json` - Expo app configuration
+- `package.json` - Dependencies and scripts
 
-- JWT-based authentication
-- Input validation and sanitization
-- File upload size limits
-- Admin-only routes protection
-- SQL injection prevention with Prisma
+### Troubleshooting
 
-## 🌟 User Experience Features
+**Common Issues:**
+1. **Metro bundler issues**: Run `npm run clear` to clear cache
+2. **Network connection**: Ensure your device and computer are on the same network
+3. **Expo Go not working**: Update to the latest version of Expo Go app
+4. **Build errors**: Check that all dependencies are installed with `npm install`
 
-- **Accessibility**: Large touch targets, clear typography
-- **Performance**: Optimized images and lazy loading
-- **Offline Support**: Local storage with AsyncStorage
-- **Error Handling**: Graceful error messages and recovery
-- **Loading States**: Visual feedback for all async operations
+**Need Help?**
+- Check the `README-LOCAL-DEVELOPMENT.md` file in the frontend directory for detailed setup instructions
+- Ensure your Node.js version is 16 or higher
+- Make sure you have a stable internet connection
 
-## 🚀 Deployment
+## 🎨 Design Philosophy
 
-### Backend (Vercel)
-1. Connect GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
+- **Clean & Modern UI**: White (#FFFFFF) and dark gray (#202021) color scheme
+- **User-Friendly**: Designed for all ages, including older, non-tech-savvy users
+- **Simple Navigation**: Essential buttons only with clear, intuitive interfaces
+- **Professional Appearance**: Modern typography and consistent spacing
 
-### Frontend (Expo Build)
-1. **Development**: Use Expo Go app
-2. **Production**: Build APK/IPA for distribution
-   ```bash
-   expo build:android
-   expo build:ios
-   ```
+## 🌟 Key Features
 
-### Database (Supabase)
-1. Create Supabase project
-2. Update DATABASE_URL in environment variables
-3. Run migrations: `npx prisma db push`
+- **Real-time Social Feed**: Share and interact with pet photos
+- **Pet Profile Management**: Comprehensive pet information and medical records
+- **Interactive Maps**: Find nearby pet shops and services
+- **Admin Dashboard**: Analytics and content management
+- **Cross-platform**: Works on both iOS and Android devices
+- **Offline Support**: Local data storage with AsyncStorage
 
 ## 👥 Team
 

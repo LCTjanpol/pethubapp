@@ -29,11 +29,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
     console.log('Content-Type:', req.headers['content-type']);
+    console.log('Request body keys:', Object.keys(req.body || {}));
 
     const { userId, imageBase64 } = req.body;
 
     console.log('User ID:', userId);
     console.log('Image base64 length:', imageBase64 ? imageBase64.length : 0);
+    console.log('Image base64 preview:', imageBase64 ? imageBase64.substring(0, 100) + '...' : 'null');
 
     // Validate required fields
     if (!userId) {
@@ -44,9 +46,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (!imageBase64) {
+      console.log('❌ No image data provided');
       return res.status(400).json({ 
         success: false,
         message: 'Image data is required' 
+      });
+    }
+
+    // Validate base64 format
+    if (!imageBase64.startsWith('data:image/')) {
+      console.log('❌ Invalid base64 format - does not start with data:image/');
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid image format'
       });
     }
 
@@ -77,9 +89,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Handle base64 image upload
     try {
+      console.log('🔄 Processing base64 image...');
+      
       // Convert base64 to buffer
       const base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+      console.log('Base64 data length after cleanup:', base64Data.length);
+      console.log('Base64 data preview:', base64Data.substring(0, 50) + '...');
+      
       const buffer = Buffer.from(base64Data, 'base64');
+      console.log('Buffer created, size:', buffer.length, 'bytes');
       
       // Generate filename
       const safeEmail = user.email.replace(/[^a-zA-Z0-9]/g, '_');
