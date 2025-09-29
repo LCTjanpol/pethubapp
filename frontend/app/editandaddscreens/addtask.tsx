@@ -1271,7 +1271,7 @@ const styles = StyleSheet.create({
   },
   // Form styles
   formGroup: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   formLabel: {
     fontSize: 14,
@@ -1285,8 +1285,8 @@ const styles = StyleSheet.create({
   },
   frequencyOption: {
     flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 2,
+    paddingHorizontal: 10,
     borderRadius: 6,
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
@@ -1295,8 +1295,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#007bff',
   },
   frequencyOptionText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 10,
+    fontWeight: '300',
     color: '#333',
   },
   frequencyOptionTextSelected: {
