@@ -68,27 +68,44 @@ const EditPetProfileScreen = () => {
         Alert.alert('Error', 'No token found. Please log in again.');
         return;
       }
-      const formData = new FormData();
-      if (pet.name) formData.append('name', pet.name);
-      if (pet.age) formData.append('age', pet.age);
-      if (pet.type) formData.append('type', pet.type);
-      if (pet.breed) formData.append('breed', pet.breed);
+
+      // Convert image to base64 if present
+      let imageBase64 = null;
       if (profileImage && profileImage.startsWith('file')) {
-        formData.append('petPicture', {
-          uri: profileImage,
-          type: 'image/jpeg',
-          name: 'pet.jpg',
-        } as any);
+        try {
+          console.log('📸 Converting pet image to base64...');
+          const response = await fetch(profileImage);
+          const arrayBuffer = await response.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          imageBase64 = `data:image/jpeg;base64,${base64}`;
+          console.log('✅ Pet image converted to base64');
+        } catch (imgError) {
+          console.error('❌ Error converting pet image to base64:', imgError);
+          Alert.alert('Error', 'Failed to process image. Please try again.');
+          return;
+        }
       }
-      await apiClient.put(ENDPOINTS.PET.UPDATE(petId), formData, {
+
+      // Prepare request data
+      const requestData: any = {};
+      if (pet.name) requestData.name = pet.name;
+      if (pet.age) requestData.age = pet.age;
+      if (pet.type) requestData.type = pet.type;
+      if (pet.breed) requestData.breed = pet.breed;
+      if (imageBase64) requestData.imageBase64 = imageBase64;
+
+      await apiClient.put('/pet/update-base64', { id: petId, ...requestData }, {
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
+        timeout: 90000, // 90 seconds for large base64 payloads
       });
       Alert.alert('Success', 'Pet updated!');
       await fetchPet();
       navigation.goBack();
     } catch (error: any) {
+      console.error('❌ Pet update error:', error);
       if (error?.response?.data?.message) {
         Alert.alert('Error', error.response.data.message);
       } else {

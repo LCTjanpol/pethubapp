@@ -52,7 +52,22 @@ const Login = () => {
       // Use auth context login function
       const success = await login(email, password);
       
-      if (!success) {
+      if (success) {
+        // Show success message and navigate
+        Alert.alert(
+          'Login Successful', 
+          'Welcome back! Redirecting to your dashboard...',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Navigate to index screen which will handle routing based on user type
+                router.replace('/');
+              }
+            }
+          ]
+        );
+      } else {
         Alert.alert('Login Failed', 'Invalid email or password. Please check your credentials and try again.');
       }
     } catch (error: any) {

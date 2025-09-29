@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import MapView, { Marker } from 'react-native-maps';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FontAwesome } from '@expo/vector-icons';
@@ -299,6 +300,43 @@ const AdminShopsScreen = () => {
   const navigateToPets = () => router.replace('/admin/pets');
   const navigateToPosts = () => router.replace('/admin/posts');
 
+  // Request location permission
+  const requestLocationPermission = async () => {
+    try {
+      console.log('📍 Requesting location permission for shop creation...');
+      
+      // Check if permission is already granted
+      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+      if (existingStatus === 'granted') {
+        console.log('✅ Location permission already granted');
+        return true;
+      }
+
+      // Request permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        console.log('✅ Location permission granted');
+        return true;
+      } else {
+        console.log('❌ Location permission denied');
+        Alert.alert(
+          'Location Permission Required',
+          'This app needs location permission to select shop locations on the map. Please enable location access in your device settings.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error requesting location permission:', error);
+      Alert.alert(
+        'Permission Error',
+        'Failed to request location permission. Please check your device settings and try again.',
+        [{ text: 'OK' }]
+      );
+      return false;
+    }
+  };
+
   // Map selection handler
   const handleMapPress = (event: any) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
@@ -391,21 +429,35 @@ const AdminShopsScreen = () => {
       if (selectedImage && (!isEditing || hasNewImage)) {
         try {
           console.log('📸 Converting shop image to base64...');
+          console.log('Selected image URI:', selectedImage);
+          
           const response_fetch = await fetch(selectedImage);
-          const blob = await response_fetch.blob();
+          console.log('Fetch response status:', response_fetch.status);
           
-          // Convert blob to base64
-          const reader = new FileReader();
-          const base64Promise = new Promise<string>((resolve, reject) => {
-            reader.onload = () => {
-              const result = reader.result as string;
-              resolve(result);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
+          if (!response_fetch.ok) {
+            throw new Error(`Failed to fetch image: ${response_fetch.status}`);
+          }
           
-          imageBase64 = await base64Promise;
+          // Use the same method as editprofile.tsx - direct arrayBuffer() call
+          const arrayBuffer = await response_fetch.arrayBuffer();
+          console.log('ArrayBuffer size:', arrayBuffer.byteLength);
+          
+          // Use chunked conversion to avoid stack overflow with large images
+          const uint8Array = new Uint8Array(arrayBuffer);
+          let binary = '';
+          const chunkSize = 8192; // Process in chunks of 8KB
+          
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
+          }
+          
+          const base64 = btoa(binary);
+          imageBase64 = `data:image/jpeg;base64,${base64}`;
+          
+          console.log('Base64 conversion completed, length:', imageBase64.length);
+          console.log('Base64 preview:', imageBase64.substring(0, 100) + '...');
+          
           console.log('✅ Shop image converted to base64:', {
             hasImage: !!imageBase64,
             base64Length: imageBase64.length
@@ -753,7 +805,12 @@ const AdminShopsScreen = () => {
               <Text style={styles.label}>Location *</Text>
               <TouchableOpacity 
                 style={styles.mapButton}
-                onPress={() => setShowMapModal(true)}
+                onPress={async () => {
+                  const hasPermission = await requestLocationPermission();
+                  if (hasPermission) {
+                    setShowMapModal(true);
+                  }
+                }}
               >
                 <FontAwesome name="map-marker" size={20} color={PetHubColors.darkGray} />
                 <Text style={styles.mapButtonText}>
@@ -918,12 +975,15 @@ const AdminShopsScreen = () => {
           <MapView
             style={styles.map}
             initialRegion={{
-              latitude: 37.78825,
-              longitude: -122.4324,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
+              latitude: 10.3157, // Centered on Cebu, Philippines
+              longitude: 123.8854,
+              latitudeDelta: 0.5,
+              longitudeDelta: 0.5,
             }}
             onPress={handleMapPress}
+            onMapReady={() => {
+              console.log('🗺️ Shop location map is ready');
+            }}
           >
             {selectedLocation && (
               <Marker

@@ -4,7 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient, ENDPOINTS } from '../../config/api';
+import { apiClient } from '../../config/api';
 
 const AddPetScreen = () => {
   const navigation = useNavigation();
@@ -46,21 +46,35 @@ const AddPetScreen = () => {
       if (image) {
         try {
           console.log('📸 Converting image to base64...');
+          console.log('Image URI:', image.uri);
+          
           const response_fetch = await fetch(image.uri);
-          const blob = await response_fetch.blob();
+          console.log('Fetch response status:', response_fetch.status);
           
-          // Convert blob to base64
-          const reader = new FileReader();
-          const base64Promise = new Promise<string>((resolve, reject) => {
-            reader.onload = () => {
-              const result = reader.result as string;
-              resolve(result);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
+          if (!response_fetch.ok) {
+            throw new Error(`Failed to fetch image: ${response_fetch.status}`);
+          }
           
-          imageBase64 = await base64Promise;
+          // Use the same method as editprofile.tsx - direct arrayBuffer() call
+          const arrayBuffer = await response_fetch.arrayBuffer();
+          console.log('ArrayBuffer size:', arrayBuffer.byteLength);
+          
+          // Use chunked conversion to avoid stack overflow with large images
+          const uint8Array = new Uint8Array(arrayBuffer);
+          let binary = '';
+          const chunkSize = 8192; // Process in chunks of 8KB
+          
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
+          }
+          
+          const base64 = btoa(binary);
+          imageBase64 = `data:image/jpeg;base64,${base64}`;
+          
+          console.log('Base64 conversion completed, length:', imageBase64.length);
+          console.log('Base64 preview:', imageBase64.substring(0, 100) + '...');
+          
           console.log('✅ Image converted to base64:', {
             hasImage: !!imageBase64,
             base64Length: imageBase64.length
@@ -102,7 +116,21 @@ const AddPetScreen = () => {
           baseURL: error.config?.baseURL
         }
       });
-      Alert.alert('Error', 'Failed to add pet: ' + (error?.message || 'Unknown error'));
+      
+      // Handle different error types with user-friendly messages
+      let message = 'Failed to add pet. Please try again.';
+      
+      if (error.code === 'ECONNABORTED') {
+        message = 'Request timeout. Please check your internet connection and try again.';
+      } else if (error.response?.status === 400) {
+        message = error.response.data?.message || 'Invalid pet data. Please check your inputs.';
+      } else if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = `Network error: ${error.message}`;
+      }
+      
+      Alert.alert('Error', message);
     }
   };
 
@@ -113,7 +141,7 @@ const AddPetScreen = () => {
       </TouchableOpacity>
       <Text style={styles.headerText}>Add Pet</Text>
       <Image source={require('../../assets/images/pet.png')} style={styles.petImage} />
-      <Text style={styles.label}>Pet's Name</Text>
+      <Text style={styles.label}>Pet&apos;s Name</Text>
       <TextInput
         style={styles.input}
         placeholder="Pet's Name"

@@ -11,18 +11,16 @@ const IndexScreen = () => {
   // Check authentication status on component mount
   useEffect(() => {
     checkAuthStatus();
-  }, []); // Remove checkAuthStatus from dependencies to prevent infinite loop
+  }, [checkAuthStatus]); // Include checkAuthStatus dependency
 
   // Handle navigation when authentication status changes
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // Reset navigation flag when user changes to allow re-navigation
-      hasNavigated.current = false;
-      
+    if (isAuthenticated && user && !isLoading) {
       console.log('=== ROUTING DECISION ===');
       console.log('User:', user.fullName);
       console.log('isAdmin:', user.isAdmin);
       console.log('typeof isAdmin:', typeof user.isAdmin);
+      console.log('hasNavigated:', hasNavigated.current);
       console.log('========================');
       
       // Small delay to ensure routes are fully loaded
@@ -50,9 +48,9 @@ const IndexScreen = () => {
             }
           }
         }
-      }, 100);
+      }, 200); // Increased delay to ensure proper navigation
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, isLoading]);
 
   // Show loading screen while checking authentication
   if (isLoading) {

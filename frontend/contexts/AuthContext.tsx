@@ -23,6 +23,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
+  clearAuthData: () => Promise<void>;
 }
 
 // Create the auth context
@@ -60,7 +61,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const response = await apiClient.get(ENDPOINTS.USER.PROFILE, {
           headers: { Authorization: `Bearer ${token}` },
+          validateStatus: (status) => status === 200 || status === 401 // Accept 200 or 401
         });
+
+        // Check if response is 401 (unauthorized)
+        if (response.status === 401) {
+          console.log('🔐 Token validation failed - 401 Unauthorized');
+          throw new Error('Invalid token');
+        }
 
         // Token is valid, restore user session
         const userData = JSON.parse(storedUser);
@@ -68,17 +76,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAdmin(userData.isAdmin || false);
         setIsAuthenticated(true);
         
-        console.log('User session restored:', userData.fullName);
+        console.log('✅ User session restored:', userData.fullName);
         
         // Don't navigate immediately - let the app handle routing
         // The index screen will check isAuthenticated and redirect appropriately
         
-      } catch (error) {
+      } catch (error: any) {
         console.error('Token validation failed:', error);
         
-        // Token is invalid, clear stored data
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('user');
+        // Only clear data if it's a 401 error or network issue
+        if (error.response?.status === 401 || error.message === 'Invalid token') {
+          console.log('🧹 Clearing invalid authentication data');
+          await AsyncStorage.removeItem('token');
+          await AsyncStorage.removeItem('user');
+        }
+        
         setIsAuthenticated(false);
         setUser(null);
         setIsAdmin(false);
@@ -128,21 +140,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Logout function
-  const logout = async () => {
+  // Clear authentication data utility
+  const clearAuthData = async () => {
     try {
-      // Clear stored authentication data
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
-
-      // Reset state
       setUser(null);
       setIsAdmin(false);
       setIsAuthenticated(false);
+      console.log('🧹 Authentication data cleared');
+    } catch (error) {
+      console.error('Error clearing auth data:', error);
+    }
+  };
 
+  // Logout function
+  const logout = async () => {
+    try {
+      await clearAuthData();
       console.log('User logged out successfully');
-
-      // Navigate to login screen
       router.replace('/auth/login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -162,6 +178,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     checkAuthStatus,
+    clearAuthData,
   };
 
   return (

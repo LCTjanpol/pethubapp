@@ -1,8 +1,9 @@
 // API Configuration
 import axios from 'axios';
+import { config } from './environment';
 
-// Update this URL to match your backend server address
-export const API_URL = "https://pethub-backend-8dfs.onrender.com/api"; // <-- Render deployment
+// Use environment configuration for API URL
+export const API_URL = config.API_URL;
 
 // Debug logging
 console.log('🔧 API Configuration loaded:', {
@@ -51,7 +52,7 @@ apiClient.interceptors.response.use(
     console.log(`API Response: ${response.status} ${response.config.url}`);
     return response;
   },
-  (error) => {
+  async (error) => {
     console.error('API Response Error:', error);
     console.error('Error details:', {
       message: error.message,
@@ -66,6 +67,19 @@ apiClient.interceptors.response.use(
         timeout: error.config?.timeout
       }
     });
+    
+    // Handle 401 Unauthorized errors - clear invalid tokens
+    if (error.response?.status === 401) {
+      console.error('🔐 401 Unauthorized - clearing invalid token');
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        await AsyncStorage.default.removeItem('token');
+        await AsyncStorage.default.removeItem('user');
+        console.log('🧹 Cleared invalid authentication data');
+      } catch (storageError) {
+        console.error('Error clearing storage:', storageError);
+      }
+    }
     
     // Handle specific error types
     if (error.code === 'ECONNABORTED') {

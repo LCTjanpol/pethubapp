@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pethub.app"
+      "bundleIdentifier": "com.pethub.app",
+      "config": {
+        "googleMapsApiKey": "AIzaSyBvOkBwJjJjJjJjJjJjJjJjJjJjJjJjJjJj"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +26,12 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.pethub.app",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBvOkBwJjJjJjJjJjJjJjJjJjJjJjJjJjJj"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -40,10 +48,34 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them with your pets.",
+          "cameraPermission": "The app accesses your camera to let you take photos of your pets."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app uses location to show nearby pet shops and services."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/logo.png",
+          "color": "#202021",
+          "defaultChannel": "default"
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {}
     }
   }
 }

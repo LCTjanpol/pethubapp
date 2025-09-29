@@ -94,47 +94,66 @@ const EditProfileScreen = () => {
     setUpdating(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      const formData = new FormData();
-      let hasChanges = false;
       
-      // Always include full name (required field)
-      formData.append('fullName', user.fullName.trim());
-      if (user.fullName.trim() !== originalUser.fullName) { hasChanges = true; }
+      // Convert image to base64 if present
+      let imageBase64 = null;
+      if (profileImage && profileImage !== originalUser.profilePicture) {
+        try {
+          console.log('📸 Converting profile image to base64...');
+          const response = await fetch(profileImage);
+          const arrayBuffer = await response.arrayBuffer();
+          
+          // Use chunked conversion to avoid stack overflow with large images
+          const uint8Array = new Uint8Array(arrayBuffer);
+          let binary = '';
+          const chunkSize = 8192; // Process in chunks of 8KB
+          
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
+          }
+          
+          const base64 = btoa(binary);
+          imageBase64 = `data:image/jpeg;base64,${base64}`;
+          console.log('✅ Profile image converted to base64');
+        } catch (imgError) {
+          console.error('❌ Error converting profile image to base64:', imgError);
+          Alert.alert('Error', 'Failed to process image. Please try again.');
+          return;
+        }
+      }
+
+      // Prepare request data
+      const requestData: any = {
+        fullName: user.fullName.trim(),
+      };
       
       // Include birthdate if provided
       if (user.birthdate) {
-        formData.append('birthdate', user.birthdate);
-        if (user.birthdate !== originalUser.birthdate) { hasChanges = true; }
+        requestData.birthdate = user.birthdate;
       }
       
       // Include gender if provided
       if (user.gender) {
-        formData.append('gender', user.gender);
-        if (user.gender !== originalUser.gender) { hasChanges = true; }
+        requestData.gender = user.gender;
       }
       
       // Include profile image if selected
-      if (profileImage && profileImage !== originalUser.profilePicture) {
-        formData.append('profileImage', {
-          uri: profileImage,
-          type: 'image/jpeg',
-          name: 'profile.jpg',
-        } as any);
-        hasChanges = true;
+      if (imageBase64) {
+        requestData.imageBase64 = imageBase64;
       }
-      
-      // Always allow saving, even if no changes detected (user might want to save current state)
-      if (!hasChanges) {
-        console.log('No changes detected, but allowing save anyway');
-      }
-      await apiClient.put(ENDPOINTS.USER.PROFILE, formData, {
+
+      await apiClient.put('/user/update-profile-base64', requestData, {
         headers: {
           Authorization: `Bearer ${token || ''}`,
+          'Content-Type': 'application/json',
         },
+        timeout: 90000, // 90 seconds for large base64 payloads
       });
       Alert.alert('Success', 'Profile updated!');
       router.back();
     } catch (error: any) {
+      console.error('❌ Profile update error:', error);
       Alert.alert('Error', 'Failed to update profile: ' + (error?.message || error));
     } finally {
       setUpdating(false);

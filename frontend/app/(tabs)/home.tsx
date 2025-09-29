@@ -102,11 +102,18 @@ const Home = () => {
     try {
       const response = await apiClient.get(ENDPOINTS.USER.PROFILE, {
         headers: { Authorization: `Bearer ${token}` },
-        validateStatus: (status) => status === 200 || status === 404
+        validateStatus: (status) => status === 200 || status === 401 || status === 404
       });
       
+      if (response.status === 401) {
+        console.log('🔐 401 Unauthorized - token invalid');
+        // Don't show alert, just redirect to login
+        navigation.reset({ index: 0, routes: [{ name: 'auth/login' as never }] });
+        return;
+      }
+      
       if (response.status === 404) {
-        Alert.alert('Error', 'User not found. Please log in again.');
+        console.log('👤 User not found');
         navigation.reset({ index: 0, routes: [{ name: 'auth/login' as never }] });
         return;
       }
@@ -114,7 +121,10 @@ const Home = () => {
       setCurrentUser(response.data);
     } catch (error: any) {
       console.error('Error fetching user profile:', error);
-      Alert.alert('Error', 'Failed to fetch user profile. Please log in again.');
+      // Only show alert for non-401 errors
+      if (error.response?.status !== 401) {
+        Alert.alert('Error', 'Failed to fetch user profile. Please try again.');
+      }
       navigation.reset({ index: 0, routes: [{ name: 'auth/login' as never }] });
     }
   }, [navigation]);
@@ -124,7 +134,14 @@ const Home = () => {
     try {
       const response = await apiClient.get(ENDPOINTS.POST.LIST, {
         headers: { Authorization: `Bearer ${token}` },
+        validateStatus: (status) => status === 200 || status === 401
       });
+      
+      if (response.status === 401) {
+        console.log('🔐 401 Unauthorized - token invalid for posts');
+        navigation.reset({ index: 0, routes: [{ name: 'auth/login' as never }] });
+        return;
+      }
       
       const sortedPosts: Post[] = response.data.sort((a: Post, b: Post) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -133,7 +150,10 @@ const Home = () => {
       setPosts(sortedPosts);
     } catch (error: any) {
       console.error('Error fetching posts:', error);
-      Alert.alert('Error', 'Failed to fetch posts. Please log in again.');
+      // Only show alert for non-401 errors
+      if (error.response?.status !== 401) {
+        Alert.alert('Error', 'Failed to fetch posts. Please try again.');
+      }
       navigation.reset({ index: 0, routes: [{ name: 'auth/login' as never }] });
     }
   }, [navigation]);
@@ -249,22 +269,35 @@ const Home = () => {
       console.log('Selected image:', selectedImage);
       console.log('Caption:', postCaption);
 
-      // Convert image to base64
+      // Convert image to base64 using the same method as editprofile.tsx (which works)
+      console.log('Converting image to base64...');
+      
       const response_fetch = await fetch(selectedImage);
-      const blob = await response_fetch.blob();
+      console.log('Fetch response status:', response_fetch.status);
       
-      // Convert blob to base64
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      if (!response_fetch.ok) {
+        throw new Error(`Failed to fetch image: ${response_fetch.status}`);
+      }
       
-      const imageBase64 = await base64Promise;
+      // Use the same method as editprofile.tsx - direct arrayBuffer() call
+      const arrayBuffer = await response_fetch.arrayBuffer();
+      console.log('ArrayBuffer size:', arrayBuffer.byteLength);
+      
+      // Use chunked conversion to avoid stack overflow with large images
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      const chunkSize = 8192; // Process in chunks of 8KB
+      
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.slice(i, i + chunkSize);
+        binary += String.fromCharCode(...chunk);
+      }
+      
+      const base64 = btoa(binary);
+      const imageBase64 = `data:image/jpeg;base64,${base64}`;
+      
+      console.log('Base64 conversion completed, length:', imageBase64.length);
+      console.log('Base64 preview:', imageBase64.substring(0, 100) + '...');
       
       console.log('Base64 image created:', {
         hasImage: !!imageBase64,
@@ -298,7 +331,21 @@ const Home = () => {
         data: error.response?.data,
         config: error.config
       });
-      Alert.alert('Error', 'Failed to share post.');
+      
+      // Handle different error types with user-friendly messages
+      let message = 'Failed to share post. Please try again.';
+      
+      if (error.code === 'ECONNABORTED') {
+        message = 'Request timeout. Please check your internet connection and try again.';
+      } else if (error.response?.status === 400) {
+        message = error.response.data?.message || 'Invalid post data. Please check your inputs.';
+      } else if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = `Network error: ${error.message}`;
+      }
+      
+      Alert.alert('Error', message);
     } finally {
       setIsPosting(false);
     }

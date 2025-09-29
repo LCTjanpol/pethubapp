@@ -1,11 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, Image, Alert, 
-  Modal, ScrollView 
+  Modal, ScrollView
 } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Location from 'expo-location';
 import { apiClient, ENDPOINTS, API_URL } from '../../config/api';
 import { PetHubColors } from '../../constants/Colors';
 
@@ -30,8 +31,9 @@ const MapsScreen = () => {
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [showShopModal, setShowShopModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  // Removed unused refreshing state
+  const [locationPermission, setLocationPermission] = useState<boolean>(false);
   const [shopAddresses, setShopAddresses] = useState<{[key: number]: string}>({});
+  const mapRef = useRef<MapView>(null);
 
   // Helper function to generate proper image URLs
   const getImageUrl = (imagePath: string | undefined): { uri: string } | number => {
@@ -77,12 +79,48 @@ const MapsScreen = () => {
       return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
     }
   };
-  const [mapRegion, setMapRegion] = useState<Region>({
-    latitude: 10.3157, // Centered on Cebu, Philippines
-    longitude: 123.8854,
-    latitudeDelta: 0.5,
-    longitudeDelta: 0.5,
+  const [mapRegion] = useState<Region>({
+    latitude: 10.3769, // Centered on Toledo City, Cebu, Philippines
+    longitude: 123.6407,
+    latitudeDelta: 0.1, // Closer zoom level for city view
+    longitudeDelta: 0.1,
   });
+
+  // Request location permission
+  const requestLocationPermission = async () => {
+    try {
+      console.log('📍 Requesting location permission...');
+      
+      // Check if permission is already granted
+      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+      if (existingStatus === 'granted') {
+        console.log('✅ Location permission already granted');
+        setLocationPermission(true);
+        return true;
+      }
+
+      // Request permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        console.log('✅ Location permission granted');
+        setLocationPermission(true);
+        return true;
+      } else {
+        console.log('❌ Location permission denied');
+        setLocationPermission(false);
+        Alert.alert(
+          'Location Permission Required',
+          'This app needs location permission to show nearby pet shops. Please enable location access in your device settings.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error requesting location permission:', error);
+      setLocationPermission(false);
+      return false;
+    }
+  };
 
   // Fetch shops from API
   const fetchShops = useCallback(async () => {
@@ -112,28 +150,12 @@ const MapsScreen = () => {
       });
       setShopAddresses(addressMap);
       
-      // Auto-fit map to show all shops if available
-      if (response.data.length > 0) {
-        const latitudes = response.data.map((shop: Shop) => shop.latitude);
-        const longitudes = response.data.map((shop: Shop) => shop.longitude);
-        
-        const minLat = Math.min(...latitudes);
-        const maxLat = Math.max(...latitudes);
-        const minLng = Math.min(...longitudes);
-        const maxLng = Math.max(...longitudes);
-        
-        const centerLat = (minLat + maxLat) / 2;
-        const centerLng = (minLng + maxLng) / 2;
-        const deltaLat = Math.max(maxLat - minLat, 0.01) * 1.5; // Add padding
-        const deltaLng = Math.max(maxLng - minLng, 0.01) * 1.5;
-        
-        setMapRegion({
-          latitude: centerLat,
-          longitude: centerLng,
-          latitudeDelta: deltaLat,
-          longitudeDelta: deltaLng,
-        });
-      }
+      // Only auto-fit map if user hasn't manually moved the map
+      // This prevents the map from jumping around when shops are loaded
+      console.log('📍 Shops loaded:', response.data.length);
+      
+      // Optional: Add a button to "Show All Shops" instead of auto-fitting
+      // This gives users control over when to auto-fit the map
     } catch (error) {
       console.error('Failed to fetch shops:', error);
       Alert.alert('Error', 'Failed to fetch shop locations');
@@ -172,11 +194,69 @@ const MapsScreen = () => {
     }
   };
 
+  // Function to show all shops on map
+  const handleShowAllShops = () => {
+    if (shops.length === 0) return;
+    
+    const latitudes = shops.map((shop: Shop) => shop.latitude);
+    const longitudes = shops.map((shop: Shop) => shop.longitude);
+    
+    const minLat = Math.min(...latitudes);
+    const maxLat = Math.max(...latitudes);
+    const minLng = Math.min(...longitudes);
+    const maxLng = Math.max(...longitudes);
+    
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    const deltaLat = Math.max(maxLat - minLat, 0.01) * 1.5; // Add padding
+    const deltaLng = Math.max(maxLng - minLng, 0.01) * 1.5;
+    
+    // Animate to the new region without updating state
+    mapRef.current?.animateToRegion({
+      latitude: centerLat,
+      longitude: centerLng,
+      latitudeDelta: deltaLat,
+      longitudeDelta: deltaLng,
+    }, 1000);
+  };
+
+  // Function to reset map to Toledo City
+  const resetMapToToledo = () => {
+    // Animate to Toledo City without updating state
+    mapRef.current?.animateToRegion({
+      latitude: 10.3769, // Toledo City, Cebu, Philippines
+      longitude: 123.6407,
+      latitudeDelta: 0.1,
+      longitudeDelta: 0.1,
+    }, 1000);
+  };
+
   // Removed unused onRefresh function
 
-  // Initialize shops
+  // Initialize shops and request location permission
   useEffect(() => {
-    fetchShops();
+    const initializeMaps = async () => {
+      try {
+        console.log('🗺️ Initializing maps...');
+        
+        // Request location permission first
+        const hasPermission = await requestLocationPermission();
+        console.log('📍 Location permission result:', hasPermission);
+        
+        // Fetch shops regardless of permission (shops can be shown without user location)
+        await fetchShops();
+        console.log('✅ Maps initialization completed');
+      } catch (error) {
+        console.error('❌ Error initializing maps:', error);
+        Alert.alert(
+          'Map Error', 
+          'Failed to initialize maps. This might be due to network issues or location permissions. Please check your connection and try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    };
+
+    initializeMaps();
   }, [fetchShops]);
 
   // Refresh shops when screen is focused
@@ -186,21 +266,44 @@ const MapsScreen = () => {
     }, [fetchShops])
   );
 
+  // Show loading state while initializing
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Pet Shops Near You</Text>
+          <Text style={styles.headerSubtitle}>Loading...</Text>
+        </View>
+        <View style={styles.loadingOverlay}>
+          <Text style={styles.loadingText}>Loading map...</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Pet Shops Near You</Text>
-        <Text style={styles.headerSubtitle}>{shops.length} shops found</Text>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.headerTitle}>Pet Shops Near You</Text>
+            <Text style={styles.headerSubtitle}>{shops.length} shops found</Text>
+          </View>
+          
+        </View>
       </View>
 
       {/* Map */}
       <MapView
+        ref={mapRef}
         style={styles.map}
-        region={mapRegion}
-        onRegionChangeComplete={setMapRegion}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
+        initialRegion={mapRegion}
+        showsUserLocation={locationPermission}
+        showsMyLocationButton={locationPermission}
+        onMapReady={() => {
+          console.log('🗺️ Map is ready');
+        }}
       >
         {shops.map((shop) => (
           <Marker
@@ -330,6 +433,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: PetHubColors.mediumGray,
   },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -339,6 +447,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: PetHubColors.textSecondary,
     marginTop: 4,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  resetButton: {
+    backgroundColor: PetHubColors.lightGray,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: PetHubColors.mediumGray,
+  },
+  resetButtonText: {
+    color: PetHubColors.darkGray,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  showAllButton: {
+    backgroundColor: PetHubColors.darkGray,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  showAllButtonText: {
+    color: PetHubColors.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   map: {
     flex: 1,

@@ -7,7 +7,6 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
-import axios from 'axios';
 import { apiClient, ENDPOINTS, API_URL } from '../../config/api';
 import { PetHubColors } from '../../constants/Colors';
 
@@ -43,12 +42,19 @@ export default function RegisterScreen() {
     });
     if (!result.canceled) {
       const asset = result.assets[0];
+      console.log('📸 Image selected:', asset.uri);
+      console.log('Image size:', asset.fileSize, 'bytes');
+      console.log('Image type:', asset.type);
+      
       // Check file size (15MB limit)
       if (asset.fileSize && asset.fileSize > 15 * 1024 * 1024) {
         Alert.alert('Error', 'Profile image exceeds 15MB. Please choose a smaller image.');
         return;
       }
       setProfileImage(asset.uri);
+      console.log('✅ Profile image state set:', asset.uri);
+    } else {
+      console.log('❌ Image selection canceled');
     }
   };
 
@@ -105,68 +111,132 @@ export default function RegisterScreen() {
       
       console.log('Response received:', response.status, response.data);
       
+      // Debug logging for image upload condition
+      console.log('🔍 Image upload condition check:');
+      console.log('profileImage:', profileImage);
+      console.log('response.data?.userId:', response.data?.userId);
+      console.log('Condition result:', !!(profileImage && response.data?.userId));
+      
       // Handle profile image upload after user creation
       if (profileImage && response.data?.userId) {
-        console.log('Uploading profile image...');
+        console.log('🖼️ Starting profile image upload...');
+        console.log('User created with ID:', response.data.userId);
+        console.log('Profile image URI:', profileImage);
+        
+        // Declare imageBase64 outside try block for error handling
+        let imageBase64: string | null = null;
+        
         try {
-          // Convert image to base64
+          // Convert image to base64 using the same method as editprofile.tsx (which works)
+          console.log('📸 Converting image to base64...');
+          
           const response_fetch = await fetch(profileImage);
-          const blob = await response_fetch.blob();
+          console.log('Fetch response status:', response_fetch.status);
           
-          // Convert blob to base64
-          const reader = new FileReader();
-          const base64Promise = new Promise<string>((resolve, reject) => {
-            reader.onload = () => {
-              const result = reader.result as string;
-              resolve(result);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
+          if (!response_fetch.ok) {
+            throw new Error(`Failed to fetch image: ${response_fetch.status}`);
+          }
           
-          const imageBase64 = await base64Promise;
+          // Use the same method as editprofile.tsx - direct arrayBuffer() call
+          const arrayBuffer = await response_fetch.arrayBuffer();
+          console.log('ArrayBuffer size:', arrayBuffer.byteLength);
           
-          console.log('Base64 image created:', {
-            userId: response.data.userId.toString(),
-            hasImage: !!imageBase64,
-            base64Length: imageBase64.length
-          });
-
+          // Use chunked conversion to avoid stack overflow with large images
+          const uint8Array = new Uint8Array(arrayBuffer);
+          let binary = '';
+          const chunkSize = 8192; // Process in chunks of 8KB
+          
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
+          }
+          
+          const base64 = btoa(binary);
+          imageBase64 = `data:image/jpeg;base64,${base64}`;
+          
+          console.log('✅ Base64 conversion completed, length:', imageBase64.length);
+          console.log('Base64 preview:', imageBase64.substring(0, 100) + '...');
+          
+          console.log('📤 Uploading to backend...');
           const imageResponse = await apiClient.post('/user/upload-profile-image-base64', {
             userId: response.data.userId.toString(),
             imageBase64: imageBase64
           }, {
-            timeout: 90000, // Increase timeout to 90 seconds
+            timeout: 90000, // 90 seconds timeout
+            headers: {
+              'Content-Type': 'application/json'
+            }
           });
           
-          console.log('Profile image uploaded successfully:', imageResponse.data);
-        } catch (imageError) {
-          console.error('Profile image upload failed:', imageError);
+          console.log('✅ Profile image uploaded successfully:', imageResponse.data);
+          console.log('Profile image URL:', imageResponse.data?.profilePicture);
+          
+          // Show success message
+          Alert.alert(
+            'Registration Successful', 
+            'Your account has been created successfully with profile image! You can now log in.',
+            [
+              {
+                text: "OK",
+                onPress: () => router.push('/auth/login')
+              }
+            ]
+          );
+          
+        } catch (imageError: any) {
+          console.error('❌ Profile image upload failed:', imageError);
           console.error('Upload error details:', {
             message: imageError.message,
             code: imageError.code,
             status: imageError.response?.status,
             statusText: imageError.response?.statusText,
             data: imageError.response?.data,
-            config: imageError.config
+            config: {
+              url: imageError.config?.url,
+              method: imageError.config?.method,
+              baseURL: imageError.config?.baseURL,
+              timeout: imageError.config?.timeout
+            }
           });
-          // Don't fail registration if image upload fails
-          console.log('Continuing with registration - image upload failed but user created');
+          
+          // Log the request that failed
+          console.error('Failed request details:', {
+            userId: response.data.userId,
+            imageBase64Length: imageBase64?.length || 0,
+            imageBase64Preview: imageBase64?.substring(0, 100) + '...' || 'N/A'
+          });
+          
+          // Show user-friendly message about image upload failure
+          Alert.alert(
+            'Image Upload Failed',
+            'Your account was created successfully, but the profile image could not be uploaded. You can add a profile image later in your profile settings.',
+            [
+              {
+                text: "OK",
+                onPress: () => router.push('/auth/login')
+              }
+            ]
+          );
         }
+      } else {
+        console.log('⚠️ Image upload skipped - condition not met:');
+        console.log('profileImage:', profileImage);
+        console.log('response.data?.userId:', response.data?.userId);
+        
+        // Show success message without image
+        Alert.alert(
+          "Registration Successful", 
+          "Your account has been created successfully! You can now log in.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.push('/auth/login')
+            }
+          ]
+        );
       }
 
       console.log('Registration successful:', response.data);
-      
-      Alert.alert(
-        "Registration Successful", 
-        "Your account has been created successfully! You can now log in.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.push('/auth/login')
-          }
-        ]
-      );
     } catch (error: any) {
       console.error('Registration error:', error);
       console.error('Error details:', {
@@ -281,12 +351,20 @@ export default function RegisterScreen() {
               <Text style={styles.label}>Profile Image (Optional)</Text>
               <View style={styles.imagePicker}>
                 <TouchableOpacity onPress={handleImagePick} style={styles.imageButton}>
-                  <Text style={styles.imageButtonText}>Choose Image</Text>
+                  <Text style={styles.imageButtonText}>
+                    {profileImage ? 'Change Image' : 'Choose Image'}
+                  </Text>
                 </TouchableOpacity>
-                <Text style={styles.imageStatus}>
+                <Text style={[styles.imageStatus, profileImage && styles.imageSelected]}>
                   {profileImage ? '✓ Image selected' : 'No image selected'}
                 </Text>
               </View>
+              {profileImage && (
+                <View style={styles.imagePreview}>
+                  <Image source={{ uri: profileImage }} style={styles.previewImage} />
+                  <Text style={styles.previewText}>Preview</Text>
+                </View>
+              )}
             </View>
 
             {/* Gender */}
@@ -473,6 +551,25 @@ const styles = StyleSheet.create({
     color: PetHubColors.textSecondary,
     flex: 1,
     textAlign: 'right',
+  },
+  imageSelected: {
+    color: PetHubColors.darkGray,
+    fontWeight: '600',
+  },
+  imagePreview: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: PetHubColors.lightGray,
+  },
+  previewText: {
+    fontSize: 12,
+    color: PetHubColors.textSecondary,
+    marginTop: 4,
   },
   radioGroup: {
     flexDirection: 'row',
